@@ -1,6 +1,6 @@
 // Global variables
 let isAdmin = false;
-let scriptUrl = 'https://script.google.com/macros/s/AKfycbz2CBIc7Dro72H-ynkT4tbN3b19oCU-Wm5uxurIwgVHQ7qhJhe92P58irmR9fGnZD7y/exec'; // Will be set after deployment
+let scriptUrl = 'https://script.google.com/macros/s/AKfycbyamytGZ4HZXJFOfQ9r1pTrWGDLJL8yBbVQvpy72Dl0qkHNi_zPxF3R6ULhQel7hgTU/exec'; // Will be set after deployment
 
 // DOM elements
 const loginScreen = document.getElementById('loginScreen');
