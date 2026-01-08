@@ -433,3 +433,23 @@ input[type="checkbox"]:disabled {
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     }
 }
+
+.table-container {
+    width: 100%;
+    overflow-x: auto; /* Agar bisa di-scroll ke samping di HP */
+    -webkit-overflow-scrolling: touch;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1000px; /* Penting: Memaksa tabel tetap lebar agar kolom tidak tumpuk */
+}
+
+.data-table th, .data-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+.text-center { text-align: center !important; }
