@@ -193,24 +193,32 @@ body {
     font-size: 0.9rem;
 }
 
-/* Tables */
+/* --- PERBAIKAN UTAMA UNTUK TABEL --- */
+/* Ini adalah bagian terpenting yang diperbaiki */
+
 .table-container {
-    overflow-x: auto;
+    display: block; /* Pastikan ini block */
+    width: 100%;
+    overflow-x: auto; /* Aktifkan scroll horizontal */
+    -webkit-overflow-scrolling: touch; /* Scroll halus di perangkat sentuh */
     background-color: white;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
 }
 
 .data-table {
-    width: 100%;
+    width: max-content; /* Lebar tabel mengikuti isinya, ini KUNCI */
+    min-width: 100%;   /* Minimal lebar tabel sama dengan kontainer */
     border-collapse: collapse;
+    font-size: 0.95rem;
 }
 
 .data-table th,
 .data-table td {
-    padding: 12px 15px;
+    padding: 10px; /* Padding yang cukup */
     text-align: left;
     border-bottom: 1px solid #eee;
+    white-space: nowrap; /* CEGAH TEKS PEMISAH BARIS */
 }
 
 .data-table th {
@@ -218,6 +226,7 @@ body {
     font-weight: 600;
     position: sticky;
     top: 0;
+    z-index: 5;
 }
 
 .data-table tr:last-child td {
@@ -228,17 +237,33 @@ body {
     background-color: #f8f9fa;
 }
 
-/* Checkbox */
+/* Perbaikan tampilan checkbox */
 .checkbox-container {
     display: flex;
     justify-content: center;
+    align-items: center;
+    padding: 5px; /* Beri sedikit ruang */
 }
 
-.checkbox-container input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
     cursor: pointer;
 }
+
+/* Style untuk checkbox yang dicentang */
+input[type="checkbox"]:checked {
+    accent-color: #28a745; /* Warna hijau */
+    transform: scale(1.1); /* Sedikit lebih besar */
+}
+
+/* Style untuk checkbox yang disabled */
+input[type="checkbox"]:disabled {
+    opacity: 0.8;
+    cursor: not-allowed;
+}
+
+/* --- AKHIR PERBAIKAN TABEL --- */
 
 /* Buttons */
 .btn {
@@ -362,6 +387,10 @@ body {
     margin-bottom: 20px;
 }
 
+.font-weight-bold {
+    font-weight: 600;
+}
+
 /* Animations */
 @keyframes fadeIn {
     from {
@@ -402,74 +431,5 @@ body {
         max-width: 1200px;
         margin: 0 auto;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-    }
-}
-
-/* Perbaikan tampilan tabel untuk Iuran Bulanan dan Jadwal Ronda */
-.table-container {
-    overflow-x: auto;
-    background-color: white;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    max-width: 100%;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 800px; /* Memastikan tabel tidak terlalu sempit */
-}
-
-.data-table th,
-.data-table td {
-    padding: 12px 8px; /* Kurangi padding horizontal untuk menghemat ruang */
-    text-align: left;
-    border-bottom: 1px solid #eee;
-    white-space: nowrap; /* Mencegah teks wrap */
-}
-
-.data-table th {
-    background-color: #f8f9fa;
-    font-weight: 600;
-    position: sticky;
-    top: 0;
-}
-
-.data-table tr:last-child td {
-    border-bottom: none;
-}
-
-.data-table tr:hover {
-    background-color: #f8f9fa;
-}
-
-/* Perbaikan tampilan checkbox */
-.checkbox-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-/* Style untuk checkbox yang dicentang */
-input[type="checkbox"]:checked {
-    accent-color: #28a745; /* Warna hijau untuk checkbox yang dicentang */
-    transform: scale(1.2); /* Sedikit memperbesar ukuran checkbox */
-}
-
-/* Style untuk checkbox yang disabled */
-input[type="checkbox"]:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-
-/* Responsive untuk tabel */
-@media (max-width: 768px) {
-    .data-table {
-        font-size: 0.9rem;
-    }
-    
-    .data-table th,
-    .data-table td {
-        padding: 8px 4px;
     }
 }
