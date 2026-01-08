@@ -227,40 +227,24 @@ function renderIuranBulanan(data) {
         return;
     }
     
-    // Create table header
     let html = '<thead><tr><th>Nama Warga</th>';
-    
-    // Add month headers (skip first column which is name)
     for (let i = 1; i < data[0].length; i++) {
         html += `<th>${data[0][i]}</th>`;
     }
-    
     html += '</tr></thead><tbody>';
     
-    // Add table rows
     for (let i = 1; i < data.length; i++) {
         if (data[i].length === 0) continue;
         html += '<tr>';
-        
-        // Add name
         html += `<td>${data[i][0] || '-'}</td>`;
         
-        // Add month checkboxes
         for (let j = 1; j < data[i].length; j++) {
             const checked = data[i][j] && data[i][j].toString().toUpperCase() === 'TRUE' ? 'checked' : '';
-            
-            html += `
-                <td class="checkbox-container">
-                    <input type="checkbox" ${checked} disabled>
-                </td>
-            `;
+            html += `<td class="checkbox-container"><input type="checkbox" ${checked} disabled></td>`;
         }
-        
         html += '</tr>';
     }
-    
     html += '</tbody>';
-    
     iuranTable.innerHTML = html;
 }
 
@@ -426,36 +410,22 @@ function renderJadwalRonda(data) {
         return;
     }
     
-    // Create table header
     let html = '<thead><tr><th>Nama Warga</th>';
-    
-    // Add date headers (skip first column which is name, and last two columns which are Terakhir Ronda and Remaining)
     for (let i = 1; i < data[0].length - 2; i++) {
         html += `<th>${data[0][i]}</th>`;
     }
-    
     html += '<th>Terakhir Ronda</th><th>Remaining</th></tr></thead><tbody>';
     
-    // Add table rows
     for (let i = 1; i < data.length; i++) {
         if (data[i].length === 0) continue;
         html += '<tr>';
-        
-        // Add name
         html += `<td>${data[i][0] || '-'}</td>`;
         
-        // Add date checkboxes
         for (let j = 1; j < data[i].length - 2; j++) {
             const checked = data[i][j] && data[i][j].toString().toUpperCase() === 'TRUE' ? 'checked' : '';
-            
-            html += `
-                <td class="checkbox-container">
-                    <input type="checkbox" ${checked} disabled>
-                </td>
-            `;
+            html += `<td class="checkbox-container"><input type="checkbox" ${checked} disabled></td>`;
         }
         
-        // Add Terakhir Ronda and Remaining
         const terakhirRonda = data[i][data[i].length - 2] ? moment(data[i][data[i].length - 2]).format('DD/MM/YYYY') : '-';
         const remaining = data[i][data[i].length - 1] || 0;
         const remainingClass = remaining > 30 ? 'text-danger' : '';
@@ -467,9 +437,7 @@ function renderJadwalRonda(data) {
         
         html += '</tr>';
     }
-    
     html += '</tbody>';
-    
     rondaTable.innerHTML = html;
 }
 
@@ -534,10 +502,6 @@ toastStyles.textContent = `
     
     .toast-info {
         background-color: #17a2b8;
-    }
-    
-    .font-weight-bold {
-        font-weight: 600;
     }
 `;
 document.head.appendChild(toastStyles);
