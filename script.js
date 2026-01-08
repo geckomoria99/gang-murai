@@ -1,6 +1,6 @@
 // Global variables
 let isAdmin = false;
-let scriptUrl = 'https://script.google.com/macros/s/AKfycbzfn-C4coYvIoG-IEECqA-bTSOKhuLaiDUAtjnkIlg5yOZuvI1RgcmtznvvXv-5tGFT/exec'; // Will be set after deployment
+let scriptUrl = 'https://script.google.com/macros/s/AKfycbxDbVMlOMUipAAdUdGuMABcyQteqc6K2xaIpXo9WC0vf7PFKd0Rdz92_zf4234A38nD/exec'; // Will be set after deployment
 
 // DOM elements
 const loginScreen = document.getElementById('loginScreen');
@@ -190,65 +190,150 @@ function loadPageData(pageName) {
     }
 }
 
-// API call function
+// API call function with multiple fallback methods
 function callApi(action, params = {}) {
-  return new Promise((resolve, reject) => {
-    // Create URL with action parameter
-    const url = `${scriptUrl}?action=${action}`;
+    console.log('Calling API:', action, params);
+    console.log('Script URL:', scriptUrl);
     
-    // Create form data
-    const formData = new FormData();
-    
-    // Add all params to formData
-    Object.keys(params).forEach(key => {
-      formData.append(key, params[key]);
+    return new Promise((resolve, reject) => {
+        // Method 1: Try with URL parameters (GET)
+        tryGetMethod(action, params)
+            .then(resolve)
+            .catch(error1 => {
+                console.log('GET method failed, trying POST with FormData:', error1.message);
+                
+                // Method 2: Try with POST and FormData
+                tryPostFormDataMethod(action, params)
+                    .then(resolve)
+                    .catch(error2 => {
+                        console.log('POST FormData method failed, trying POST with URLSearchParams:', error2.message);
+                        
+                        // Method 3: Try with POST and URLSearchParams
+                        tryPostUrlEncodedMethod(action, params)
+                            .then(resolve)
+                            .catch(error3 => {
+                                console.log('All methods failed:', error3.message);
+                                reject(new Error('All API methods failed: ' + error3.message));
+                            });
+                    });
+            });
     });
-    
-    // Make fetch request with no-cors mode and appropriate headers
-    fetch(url, {
-      method: 'POST',
-      body: formData,
-      mode: 'no-cors' // This is important for Google Apps Script
-    })
-    .then(response => {
-      // With no-cors mode, we can't directly access the response
-      // So we'll make another request to get the data
-      return fetch(`${scriptUrl}?action=${action}&${new URLSearchParams(params)}`, {
-        method: 'GET',
-        mode: 'cors'
-      });
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.status === 'success') {
-        resolve(data);
-      } else {
-        reject(new Error(data.message || 'Unknown error'));
-      }
-    })
-    .catch(error => {
-      // Try alternative method if the first one fails
-      fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams(params),
-        mode: 'cors'
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.status === 'success') {
-          resolve(data);
-        } else {
-          reject(new Error(data.message || 'Unknown error'));
-        }
-      })
-      .catch(err => {
-        reject(err);
-      });
+}
+
+// Method 1: GET with URL parameters
+function tryGetMethod(action, params) {
+    return new Promise((resolve, reject) => {
+        const url = new URL(scriptUrl);
+        url.searchParams.append('action', action);
+        
+        // Add all params to URL
+        Object.keys(params).forEach(key => {
+            url.searchParams.append(key, params[key]);
+        });
+        
+        fetch(url.toString(), {
+            method: 'GET',
+            mode: 'cors'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('GET method response:', data);
+            if (data.status === 'success') {
+                resolve(data);
+            } else {
+                reject(new Error(data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('GET method error:', error);
+            reject(error);
+        });
     });
-  });
+}
+
+// Method 2: POST with FormData
+function tryPostFormDataMethod(action, params) {
+    return new Promise((resolve, reject) => {
+        const url = `${scriptUrl}?action=${action}`;
+        const formData = new FormData();
+        
+        // Add all params to formData
+        Object.keys(params).forEach(key => {
+            formData.append(key, params[key]);
+        });
+        
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            mode: 'cors'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('POST FormData method response:', data);
+            if (data.status === 'success') {
+                resolve(data);
+            } else {
+                reject(new Error(data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('POST FormData method error:', error);
+            reject(error);
+        });
+    });
+}
+
+// Method 3: POST with URL-encoded parameters
+function tryPostUrlEncodedMethod(action, params) {
+    return new Promise((resolve, reject) => {
+        const url = scriptUrl;
+        const urlParams = new URLSearchParams();
+        
+        // Add action to params
+        urlParams.append('action', action);
+        
+        // Add all params to URLSearchParams
+        Object.keys(params).forEach(key => {
+            urlParams.append(key, params[key]);
+        });
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: urlParams.toString(),
+            mode: 'cors'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('POST URL-encoded method response:', data);
+            if (data.status === 'success') {
+                resolve(data);
+            } else {
+                reject(new Error(data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('POST URL-encoded method error:', error);
+            reject(error);
+        });
+    });
 }
 
 // Show/hide loading
