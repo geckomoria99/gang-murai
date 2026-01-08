@@ -122,28 +122,115 @@ function loadIuranBulanan() {
 }
 
 // 3. UANG KAS
+let allKasData = []; // Variabel global untuk menampung data kas buat export
+
 function loadUangKas() {
     fetchAndParseCSV(csvUrls.kas)
         .then(data => {
-            kasContainer.innerHTML = '';
-            const months = {};
-            for (let i = 1; i < data.length; i++) {
-                const [id, bulan, tgl, ket, masuk, keluar] = data[i];
-                if (!months[bulan]) months[bulan] = [];
-                months[bulan].push({ tgl, ket, masuk: parseInt(masuk)||0, keluar: parseInt(keluar)||0 });
-            }
-            Object.keys(months).forEach(m => {
-                let bal = 0;
-                let tableHtml = `<h3>${m}</h3><div class="table-container"><table class="data-table"><thead><tr><th>Tgl</th><th>Ket</th><th>Masuk</th><th>Keluar</th><th>Saldo</th></tr></thead><tbody>`;
-                months[m].forEach(t => {
-                    bal += (t.masuk - t.keluar);
-                    tableHtml += `<tr><td>${moment(t.tgl).format('DD/MM')}</td><td>${t.ket}</td><td>${formatNumber(t.masuk)}</td><td>${formatNumber(t.keluar)}</td><td><strong>${formatNumber(bal)}</strong></td></tr>`;
-                });
-                kasContainer.innerHTML += tableHtml + '</tbody></table></div><br>';
-            });
+            allKasData = data;
+            renderUangKas(data);
             updateLastUpdateTime();
         })
         .finally(() => showLoading(false));
+}
+
+function renderUangKas(data) {
+    kasContainer.innerHTML = '';
+    if (data.length <= 1) return;
+
+    const months = {};
+    let grandTotalSaldo = 0;
+    let currentMonthIn = 0;
+    let currentMonthOut = 0;
+    const currentMonthName = moment().format('MMMM'); // Misal: January
+
+    // Parsing data
+    for (let i = 1; i < data.length; i++) {
+        const [id, bulan, tgl, ket, masuk, keluar] = data[i];
+        const valMasuk = parseInt(masuk) || 0;
+        const valKeluar = parseInt(keluar) || 0;
+        
+        grandTotalSaldo += (valMasuk - valKeluar);
+
+        // Hitung total khusus bulan berjalan
+        if (bulan.toLowerCase().includes(currentMonthName.toLowerCase())) {
+            currentMonthIn += valMasuk;
+            currentMonthOut += valKeluar;
+        }
+
+        if (!months[bulan]) months[bulan] = [];
+        months[bulan].push({ tgl, ket, masuk: valMasuk, keluar: valKeluar });
+    }
+
+    // Update Stats Cards
+    document.getElementById('statTotalSaldo').textContent = `Rp ${formatNumber(grandTotalSaldo)}`;
+    document.getElementById('statTotalMasuk').textContent = `Rp ${formatNumber(currentMonthIn)}`;
+    document.getElementById('statTotalKeluar').textContent = `Rp ${formatNumber(currentMonthOut)}`;
+
+    // Render Accordion per Bulan
+    Object.keys(months).reverse().forEach((m, idx) => {
+        const monthDiv = document.createElement('div');
+        monthDiv.className = `month-accordion ${idx === 0 ? 'active' : ''}`; // Buka bulan terbaru
+        
+        let runningBal = 0;
+        let tableRows = months[m].map(t => {
+            runningBal += (t.masuk - t.keluar);
+            return `
+                <tr>
+                    <td>${moment(t.tgl).format('DD/MM')}</td>
+                    <td>${t.ket}</td>
+                    <td><span class="badge ${t.masuk > 0 ? 'badge-in' : ''}">${t.masuk > 0 ? '+' + formatNumber(t.masuk) : '-'}</span></td>
+                    <td><span class="badge ${t.keluar > 0 ? 'badge-out' : ''}">${t.keluar > 0 ? '-' + formatNumber(t.keluar) : '-'}</span></td>
+                    <td class="text-right"><strong>${formatNumber(runningBal)}</strong></td>
+                </tr>`;
+        }).join('');
+
+        monthDiv.innerHTML = `
+            <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')">
+                <span><i class="fas fa-calendar-alt"></i> ${m}</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="accordion-content">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Tgl</th><th>Keterangan</th><th>Masuk</th><th>Keluar</th><th>Saldo</th></tr></thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+        kasContainer.appendChild(monthDiv);
+    });
+}
+
+// FUNGSI EXPORT EXCEL
+function exportToExcel() {
+    const ws = XLSX.utils.aoa_to_sheet(allKasData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan Kas");
+    XLSX.writeFile(wb, `Laporan_Kas_EMURAI_${moment().format('YYYYMMDD')}.xlsx`);
+}
+
+// FUNGSI EXPORT PDF
+function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    doc.text("LAPORAN KEUANGAN KAS E-MURAI", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Dicetak pada: ${moment().format('DD MMMM YYYY HH:mm')}`, 14, 22);
+
+    const headers = [["ID", "Bulan", "Tanggal", "Keterangan", "Masuk", "Keluar"]];
+    const rows = allKasData.slice(1); // Ambil data tanpa header
+
+    doc.autoTable({
+        head: headers,
+        body: rows,
+        startY: 30,
+        theme: 'striped',
+        headStyles: { fillColor: [67, 97, 238] }
+    });
+
+    doc.save(`Laporan_Kas_${moment().format('YYYY')}.pdf`);
 }
 
 // 4. JADWAL RONDA (FIXED: Sesuai Header)
