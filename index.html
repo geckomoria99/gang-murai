@@ -1,43 +1,103 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>E-MURAI</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-MURAI - Sistem Informasi Gang Perumahan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+    <div class="app-container">
+        <!-- Main App Screen -->
+        <div id="mainScreen" class="screen">
+            <header class="app-header">
+                <div class="header-content">
+                    <h1><i class="fas fa-home"></i> E-MURAI</h1>
+                    <div class="refresh-info">
+                        <span id="lastUpdate">Terakhir diperbarui: -</span>
+                        <button id="refreshBtn" class="btn btn-small">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </header>
 
-<div id="login">
-  <h1>E-MURAI</h1>
-  <button onclick="loginGuest()">Masuk sebagai Guest</button>
+            <nav class="bottom-nav">
+                <button class="nav-item active" data-page="pengumuman">
+                    <i class="fas fa-bullhorn"></i>
+                    <span>Pengumuman</span>
+                </button>
+                <button class="nav-item" data-page="iuran">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Iuran Bulanan</span>
+                </button>
+                <button class="nav-item" data-page="kas">
+                    <i class="fas fa-wallet"></i>
+                    <span>Uang Kas</span>
+                </button>
+                <button class="nav-item" data-page="ronda">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Jadwal Ronda</span>
+                </button>
+            </nav>
 
-  <div class="admin">
-    <input type="password" id="adminPass" placeholder="Password Admin">
-    <button onclick="loginAdmin()">Login Admin</button>
-  </div>
-</div>
+            <main class="content">
+                <!-- Pengumuman Page -->
+                <div id="pengumumanPage" class="page active">
+                    <div class="page-header">
+                        <h2>Pengumuman</h2>
+                    </div>
+                    <div id="pengumumanList" class="card-container">
+                        <!-- Pengumuman items will be loaded here -->
+                    </div>
+                </div>
 
-<div id="app" class="hidden">
-  <header>
-    <h2>E-MURAI</h2>
-    <span id="role"></span>
-    <button onclick="logout()">Logout</button>
-  </header>
+                <!-- Iuran Bulanan Page -->
+                <div id="iuranPage" class="page">
+                    <div class="page-header">
+                        <h2>Iuran Bulanan 2026</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="iuranTable" class="data-table">
+                            <!-- Iuran table will be loaded here -->
+                        </table>
+                    </div>
+                </div>
 
-  <nav>
-    <button onclick="loadPage('pengumuman')">Pengumuman</button>
-    <button onclick="loadPage('iuran')">Iuran</button>
-    <button onclick="loadPage('kas')">Kas</button>
-    <button onclick="loadPage('ronda')">Ronda</button>
-  </nav>
+                <!-- Uang Kas Page -->
+                <div id="kasPage" class="page">
+                    <div class="page-header">
+                        <h2>Uang Kas</h2>
+                    </div>
+                    <div id="kasContainer">
+                        <!-- Kas tables will be loaded here -->
+                    </div>
+                </div>
 
-  <main id="content"></main>
-</div>
+                <!-- Jadwal Ronda Page -->
+                <div id="rondaPage" class="page">
+                    <div class="page-header">
+                        <h2>Jadwal Ronda</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="rondaTable" class="data-table">
+                            <!-- Ronda table will be loaded here -->
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
 
-<script src="script.js"></script>
+    <!-- Loading indicator -->
+    <div id="loadingIndicator" class="loading-indicator hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
