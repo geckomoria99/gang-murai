@@ -1,9 +1,9 @@
 // Global variables
 const csvUrls = {
-    pengumuman: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRhtHQT_YmSq-tiQt-6Kqj5Ms9oeUdTdiNIChEdQPgEQryYxTMf2M5RTgpVa1oi30rvvXrJK3XY4nyd/pub?gid=0&single=true&output=csv', // Ganti dengan URL CSV untuk sheet PENGUMUMAN
-    iuran: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRhtHQT_YmSq-tiQt-6Kqj5Ms9oeUdTdiNIChEdQPgEQryYxTMf2M5RTgpVa1oi30rvvXrJK3XY4nyd/pub?gid=1650144415&single=true&output=csv', // Ganti dengan URL CSV untuk sheet IURAN BULANAN
-    kas: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRhtHQT_YmSq-tiQt-6Kqj5Ms9oeUdTdiNIChEdQPgEQryYxTMf2M5RTgpVa1oi30rvvXrJK3XY4nyd/pub?gid=2139823991&single=true&output=csv', // Ganti dengan URL CSV untuk sheet UANG KAS
-    ronda: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRhtHQT_YmSq-tiQt-6Kqj5Ms9oeUdTdiNIChEdQPgEQryYxTMf2M5RTgpVa1oi30rvvXrJK3XY4nyd/pub?gid=2068778061&single=true&output=csv' // Ganti dengan URL CSV untuk sheet JADWAL RONDA
+    pengumuman: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRhtHQT_YmSq-tiQt-6Kqj5Ms9oeUdTdiNIChEdQPgEQryYxTMf2M5RTgpVa1oi30rvvXrJK3XY4nyd/pub?gid=0&single=true&output=csv',
+    iuran: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRhtHQT_YmSq-tiQt-6Kqj5Ms9oeUdTdiNIChEdQPgEQryYxTMf2M5RTgpVa1oi30rvvXrJK3XY4nyd/pub?gid=1650144415&single=true&output=csv',
+    kas: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRhtHQT_YmSq-tiQt-6Kqj5Ms9oeUdTdiNIChEdQPgEQryYxTMf2M5RTgpVa1oi30rvvXrJK3XY4nyd/pub?gid=2139823991&single=true&output=csv',
+    ronda: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRhtHQT_YmSq-tiQt-6Kqj5Ms9oeUdTdiNIChEdQPgEQryYxTMf2M5RTgpVa1oi30rvvXrJK3XY4nyd/pub?gid=2068778061&single=true&output=csv'
 };
 
 // DOM elements
@@ -24,484 +24,270 @@ const rondaTable = document.getElementById('rondaTable');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Aplikasi dimulai.");
-    // Event listeners
+    console.log("Aplikasi E-MURAI Dimulai.");
+    
     refreshBtn.addEventListener('click', refreshAllData);
     
-    // Navigation
     navItems.forEach(item => {
         item.addEventListener('click', function() {
             const pageName = this.getAttribute('data-page');
-            console.log(`Pindah ke halaman: ${pageName}`);
             switchPage(pageName);
         });
     });
     
-    // Load initial data
     loadInitialData();
     
-    // Auto refresh every 5 minutes
+    // Auto refresh setiap 5 menit
     setInterval(refreshAllData, 5 * 60 * 1000);
 });
 
-// Navigation
+// Navigation logic
 function switchPage(pageName) {
-    // Update nav items
     navItems.forEach(item => {
-        if (item.getAttribute('data-page') === pageName) {
-            item.classList.add('active');
-        } else {
-            item.classList.remove('active');
-        }
+        item.classList.toggle('active', item.getAttribute('data-page') === pageName);
     });
     
-    // Update pages
     pages.forEach(page => {
-        if (page.id === `${pageName}Page`) {
-            page.classList.add('active');
-        } else {
-            page.classList.remove('active');
-        }
+        page.classList.toggle('active', page.id === `${pageName}Page`);
     });
     
-    // Load page data
     loadPageData(pageName);
 }
 
-// Load initial data
 function loadInitialData() {
-    console.log("Memuat data awal...");
     refreshAllData();
 }
 
-// Refresh all data
 function refreshAllData() {
-    const currentPage = document.querySelector('.page.active').id.replace('Page', '');
-    console.log(`Menyegarkan data untuk halaman: ${currentPage}`);
-    loadPageData(currentPage);
+    const activePage = document.querySelector('.page.active').id.replace('Page', '');
+    loadPageData(activePage);
 }
 
-// Load page data
 function loadPageData(pageName) {
     showLoading(true);
-    console.log(`Memuat data untuk: ${pageName}`);
-    
     switch (pageName) {
-        case 'pengumuman':
-            loadPengumuman();
-            break;
-        case 'iuran':
-            loadIuranBulanan();
-            break;
-        case 'kas':
-            loadUangKas();
-            break;
-        case 'ronda':
-            loadJadwalRonda();
-            break;
+        case 'pengumuman': loadPengumuman(); break;
+        case 'iuran': loadIuranBulanan(); break;
+        case 'kas': loadUangKas(); break;
+        case 'ronda': loadJadwalRonda(); break;
     }
 }
 
-// *** FUNGSI YANG DIPERBAIKI ***
-// Function to fetch and parse CSV
+// Fetch and Parse CSV
 function fetchAndParseCSV(url) {
-    console.log(`Mencoba mengambil CSV dari: ${url}`);
     return new Promise((resolve, reject) => {
         fetch(url)
             .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Gagal mengambil file. Status: ${response.status}`);
-                }
-                return response.text(); // Ambil sebagai teks terlebih dahulu
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.text();
             })
             .then(csvText => {
-                console.log('CSV berhasil diambil sebagai teks. Panjang teks:', csvText.length);
-                // Parse teks CSV menggunakan PapaParse
                 const results = Papa.parse(csvText, {
                     header: false,
-                    skipEmptyLines: true // Lewati baris kosong
+                    skipEmptyLines: true
                 });
-                console.log('CSV berhasil di-parse. Data:', results.data);
-                if (results.data && results.data.length > 0) {
-                    resolve(results.data);
-                } else {
-                    reject(new Error("Data CSV kosong atau tidak valid."));
-                }
+                resolve(results.data);
             })
-            .catch(error => {
-                console.error('Gagal mengambil atau mem-parse CSV:', error);
-                reject(error);
-            });
+            .catch(error => reject(error));
     });
 }
 
-// Show/hide loading
 function showLoading(show) {
-    if (show) {
-        loadingIndicator.classList.remove('hidden');
-    } else {
-        loadingIndicator.classList.add('hidden');
-    }
+    loadingIndicator.classList.toggle('hidden', !show);
 }
 
-// Update last update time
 function updateLastUpdateTime() {
     const now = moment().format('DD MMMM YYYY, HH:mm:ss');
     lastUpdate.textContent = `Terakhir diperbarui: ${now}`;
-    console.log(`Waktu update: ${now}`);
 }
 
-// Pengumuman functions
+// 1. Render Pengumuman
 function loadPengumuman() {
     fetchAndParseCSV(csvUrls.pengumuman)
         .then(data => {
-            console.log("Data Pengumuman diterima, mulai merender...");
             renderPengumuman(data);
             updateLastUpdateTime();
         })
-        .catch(error => {
-            console.error("Error di loadPengumuman:", error);
-            showToast('Gagal memuat data pengumuman: ' + error.message, 'error');
-        })
-        .finally(() => {
-            showLoading(false);
-        });
+        .catch(err => showToast('Error: ' + err.message, 'error'))
+        .finally(() => showLoading(false));
 }
 
 function renderPengumuman(data) {
-    console.log("Merender Pengumuman dengan data:", data);
     pengumumanList.innerHTML = '';
-    
     if (data.length <= 1) {
         pengumumanList.innerHTML = '<p>Belum ada pengumuman.</p>';
         return;
     }
-    
-    // Skip header row (index 0)
     for (let i = 1; i < data.length; i++) {
-        if (data[i].length < 5) continue; // Skip baris yang tidak lengkap
-        
+        if (data[i].length < 4) continue;
         const [id, tanggal, judul, isi, pengirim] = data[i];
-        
         const card = document.createElement('div');
         card.className = 'card';
-        
         card.innerHTML = `
             <div class="card-header">
-                <h3 class="card-title">${judul || 'Tanpa Judul'}</h3>
-                <span class="card-date">${moment(tanggal).format('DD MMMM YYYY')}</span>
+                <h3 class="card-title">${judul}</h3>
+                <span class="card-date">${moment(tanggal).format('DD MMM YYYY')}</span>
             </div>
-            <div class="card-content">
-                <p>${isi || '-'}</p>
-            </div>
-            <div class="card-footer">
-                <span>Oleh: ${pengirim || '-'}</span>
-            </div>
+            <div class="card-content"><p>${isi}</p></div>
+            <div class="card-footer"><span>Oleh: ${pengirim || '-'}</span></div>
         `;
-        
         pengumumanList.appendChild(card);
     }
 }
 
-// Iuran Bulanan functions
+// 2. Render Iuran Bulanan (FIXED: Horizontal Checkbox)
 function loadIuranBulanan() {
     fetchAndParseCSV(csvUrls.iuran)
         .then(data => {
-            console.log("Data Iuran diterima, mulai merender...");
             renderIuranBulanan(data);
             updateLastUpdateTime();
         })
-        .catch(error => {
-            console.error("Error di loadIuranBulanan:", error);
-            showToast('Gagal memuat data iuran bulanan: ' + error.message, 'error');
-        })
-        .finally(() => {
-            showLoading(false);
-        });
+        .catch(err => showToast('Error: ' + err.message, 'error'))
+        .finally(() => showLoading(false));
 }
 
 function renderIuranBulanan(data) {
-    console.log("Merender Iuran dengan data:", data);
     if (data.length === 0) {
-        iuranTable.innerHTML = '<tr><td colspan="100%">Tidak ada data</td></tr>';
+        iuranTable.innerHTML = '<tr><td>Tidak ada data</td></tr>';
         return;
     }
-    
-    let html = '<thead><tr><th>Nama Warga</th>';
-    for (let i = 1; i < data[0].length; i++) {
-        html += `<th>${data[0][i]}</th>`;
-    }
+
+    const headers = data[0];
+    let html = '<thead><tr>';
+    headers.forEach(h => html += `<th>${h}</th>`);
     html += '</tr></thead><tbody>';
-    
+
     for (let i = 1; i < data.length; i++) {
-        if (data[i].length === 0) continue;
         html += '<tr>';
-        html += `<td>${data[i][0] || '-'}</td>`;
-        
-        for (let j = 1; j < data[i].length; j++) {
-            const checked = data[i][j] && data[i][j].toString().toUpperCase() === 'TRUE' ? 'checked' : '';
-            html += `<td class="checkbox-container"><input type="checkbox" ${checked} disabled></td>`;
+        for (let j = 0; j < headers.length; j++) {
+            const val = (data[i][j] || "").toString().toUpperCase();
+            if (val === 'TRUE' || val === 'FALSE') {
+                html += `<td class="text-center"><input type="checkbox" ${val === 'TRUE' ? 'checked' : ''} disabled></td>`;
+            } else {
+                html += `<td>${data[i][j] || '-'}</td>`;
+            }
         }
         html += '</tr>';
     }
-    html += '</tbody>';
-    iuranTable.innerHTML = html;
+    iuranTable.innerHTML = html + '</tbody>';
 }
 
-// Uang Kas functions
+// 3. Render Uang Kas
 function loadUangKas() {
     fetchAndParseCSV(csvUrls.kas)
         .then(data => {
-            console.log("Data Kas diterima, mulai merender...");
             renderUangKas(data);
             updateLastUpdateTime();
         })
-        .catch(error => {
-            console.error("Error di loadUangKas:", error);
-            showToast('Gagal memuat data uang kas: ' + error.message, 'error');
-        })
-        .finally(() => {
-            showLoading(false);
-        });
+        .catch(err => showToast('Error Kas: ' + err.message, 'error'))
+        .finally(() => showLoading(false));
 }
 
 function renderUangKas(data) {
-    console.log("Merender Kas dengan data:", data);
     kasContainer.innerHTML = '';
-    
-    if (data.length <= 1) {
-        kasContainer.innerHTML = '<p>Belum ada transaksi kas.</p>';
-        return;
-    }
-    
-    // Group transactions by month
+    if (data.length <= 1) return;
+
     const transactionsByMonth = {};
-    
-    // Skip header row (index 0)
     for (let i = 1; i < data.length; i++) {
-        if (data[i].length < 6) continue; // Skip baris yang tidak lengkap
-        
-        const [id, bulan, tanggal, keterangan, pemasukan, pengeluaran] = data[i];
-        
-        if (!transactionsByMonth[bulan]) {
-            transactionsByMonth[bulan] = [];
-        }
-        
+        const [id, bulan, tgl, ket, masuk, keluar] = data[i];
+        if (!transactionsByMonth[bulan]) transactionsByMonth[bulan] = [];
         transactionsByMonth[bulan].push({
-            id,
-            bulan,
-            tanggal,
-            keterangan,
-            pemasukan: parseInt(pemasukan) || 0,
-            pengeluaran: parseInt(pengeluaran) || 0
+            tgl, ket, 
+            masuk: parseInt(masuk) || 0, 
+            keluar: parseInt(keluar) || 0
         });
     }
-    
-    // Create a table for each month
-    Object.keys(transactionsByMonth).sort().forEach(bulan => {
-        const transactions = transactionsByMonth[bulan];
+
+    Object.keys(transactionsByMonth).forEach(bulan => {
+        let balance = 0;
+        const monthDiv = document.createElement('div');
+        monthDiv.className = 'mb-20';
         
-        // Calculate previous month balance
-        let previousBalance = 0;
-        const months = Object.keys(transactionsByMonth).sort();
-        const currentIndex = months.indexOf(bulan);
+        let tableHtml = `<h3>${bulan}</h3><table class="data-table"><thead>
+            <tr><th>Tgl</th><th>Keterangan</th><th>Masuk</th><th>Keluar</th><th>Saldo</th></tr>
+            </thead><tbody>`;
         
-        if (currentIndex > 0) {
-            const previousMonth = months[currentIndex - 1];
-            const previousTransactions = transactionsByMonth[previousMonth];
-            
-            let balance = 0;
-            previousTransactions.forEach(transaction => {
-                balance += transaction.pemasukan - transaction.pengeluaran;
-            });
-            
-            previousBalance = balance;
-        }
-        
-        // Create month container
-        const monthContainer = document.createElement('div');
-        monthContainer.className = 'mb-20';
-        
-        // Create month header
-        const monthHeader = document.createElement('div');
-        monthHeader.className = 'card-header mb-10';
-        monthHeader.innerHTML = `
-            <h3>${bulan}</h3>
-            <span>Saldo Awal: Rp ${formatNumber(previousBalance)}</span>
-        `;
-        
-        // Create table
-        const table = document.createElement('table');
-        table.className = 'data-table';
-        
-        // Create table header
-        let tableHtml = `
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Tanggal</th>
-                    <th>Keterangan</th>
-                    <th>Pemasukan</th>
-                    <th>Pengeluaran</th>
-                    <th>Saldo</th>
-                </tr>
-            </thead>
-            <tbody>
-        `;
-        
-        // Add transactions
-        let balance = previousBalance;
-        
-        transactions.forEach((transaction, index) => {
-            balance += transaction.pemasukan - transaction.pengeluaran;
-            
-            tableHtml += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${moment(transaction.tanggal).format('DD/MM/YYYY')}</td>
-                    <td>${transaction.keterangan}</td>
-                    <td class="text-right">Rp ${formatNumber(transaction.pemasukan)}</td>
-                    <td class="text-right">Rp ${formatNumber(transaction.pengeluaran)}</td>
-                    <td class="text-right">Rp ${formatNumber(balance)}</td>
-                </tr>
-            `;
+        transactionsByMonth[bulan].forEach(t => {
+            balance += (t.masuk - t.keluar);
+            tableHtml += `<tr>
+                <td>${moment(t.tgl).format('DD/MM')}</td>
+                <td>${t.ket}</td>
+                <td class="text-right">${formatNumber(t.masuk)}</td>
+                <td class="text-right">${formatNumber(t.keluar)}</td>
+                <td class="text-right"><strong>${formatNumber(balance)}</strong></td>
+            </tr>`;
         });
         
-        // Add final balance row
-        tableHtml += `
-            <tr class="font-weight-bold">
-                <td colspan="3">Saldo Akhir</td>
-                <td colspan="3" class="text-right">Rp ${formatNumber(balance)}</td>
-            </tr>
-        `;
-        
-        tableHtml += '</tbody>';
-        
-        table.innerHTML = tableHtml;
-        
-        // Add to container
-        monthContainer.appendChild(monthHeader);
-        monthContainer.appendChild(table);
-        kasContainer.appendChild(monthContainer);
+        monthDiv.innerHTML = tableHtml + '</tbody></table>';
+        kasContainer.appendChild(monthDiv);
     });
 }
 
-// Jadwal Ronda functions
+// 4. Render Jadwal Ronda (FIXED: Horizontal Checkbox)
 function loadJadwalRonda() {
     fetchAndParseCSV(csvUrls.ronda)
         .then(data => {
-            console.log("Data Ronda diterima, mulai merender...");
             renderJadwalRonda(data);
             updateLastUpdateTime();
         })
-        .catch(error => {
-            console.error("Error di loadJadwalRonda:", error);
-            showToast('Gagal memuat data jadwal ronda: ' + error.message, 'error');
-        })
-        .finally(() => {
-            showLoading(false);
-        });
+        .catch(err => showToast('Error Ronda: ' + err.message, 'error'))
+        .finally(() => showLoading(false));
 }
 
 function renderJadwalRonda(data) {
-    console.log("Merender Ronda dengan data:", data);
     if (data.length === 0) {
-        rondaTable.innerHTML = '<tr><td colspan="100%">Tidak ada data</td></tr>';
+        rondaTable.innerHTML = '<tr><td>Tidak ada data</td></tr>';
         return;
     }
-    
-    let html = '<thead><tr><th>Nama Warga</th>';
-    for (let i = 1; i < data[0].length - 2; i++) {
-        html += `<th>${data[0][i]}</th>`;
-    }
-    html += '<th>Terakhir Ronda</th><th>Remaining</th></tr></thead><tbody>';
-    
+
+    const headers = data[0];
+    let html = '<thead><tr>';
+    headers.forEach(h => html += `<th>${h}</th>`);
+    html += '</tr></thead><tbody>';
+
     for (let i = 1; i < data.length; i++) {
-        if (data[i].length === 0) continue;
         html += '<tr>';
-        html += `<td>${data[i][0] || '-'}</td>`;
-        
-        for (let j = 1; j < data[i].length - 2; j++) {
-            const checked = data[i][j] && data[i][j].toString().toUpperCase() === 'TRUE' ? 'checked' : '';
-            html += `<td class="checkbox-container"><input type="checkbox" ${checked} disabled></td>`;
+        for (let j = 0; j < headers.length; j++) {
+            const val = (data[i][j] || "").toString().toUpperCase();
+            
+            if (val === 'TRUE' || val === 'FALSE') {
+                html += `<td class="text-center"><input type="checkbox" ${val === 'TRUE' ? 'checked' : ''} disabled></td>`;
+            } else {
+                let cellClass = "";
+                if (headers[j].toLowerCase().includes('remaining')) {
+                    if (parseInt(data[i][j]) > 30) cellClass = "text-danger font-weight-bold";
+                }
+                html += `<td class="${cellClass}">${data[i][j] || '-'}</td>`;
+            }
         }
-        
-        const terakhirRonda = data[i][data[i].length - 2] ? moment(data[i][data[i].length - 2]).format('DD/MM/YYYY') : '-';
-        const remaining = data[i][data[i].length - 1] || 0;
-        const remainingClass = remaining > 30 ? 'text-danger' : '';
-        
-        html += `
-            <td>${terakhirRonda}</td>
-            <td class="${remainingClass}">${remaining} hari</td>
-        `;
-        
         html += '</tr>';
     }
-    html += '</tbody>';
-    rondaTable.innerHTML = html;
+    rondaTable.innerHTML = html + '</tbody>';
 }
 
-// Utility function to format numbers
 function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-// Show toast notification
 function showToast(message, type = 'info') {
-    console.log(`Toast: ${message} (${type})`);
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.textContent = message;
-    
     document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.classList.add('show');
-    }, 10);
-    
+    setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => {
         toast.classList.remove('show');
-        setTimeout(() => {
-            if (document.body.contains(toast)) {
-                document.body.removeChild(toast);
-            }
-        }, 300);
+        setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
 
-// Add CSS for toast
-const toastStyles = document.createElement('style');
-toastStyles.textContent = `
-    .toast {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%) translateY(100px);
-        background-color: #333;
-        color: white;
-        padding: 12px 24px;
-        border-radius: 4px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 1000;
-        opacity: 0;
-        transition: all 0.3s ease;
-    }
-    
-    .toast.show {
-        transform: translateX(-50%) translateY(0);
-        opacity: 1;
-    }
-    
-    .toast-success {
-        background-color: #28a745;
-    }
-    
-    .toast-error {
-        background-color: #dc3545;
-    }
-    
-    .toast-info {
-        background-color: #17a2b8;
-    }
+// Toast Styles
+const style = document.createElement('style');
+style.textContent = `
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); 
+    background: #333; color: #fff; padding: 12px 24px; border-radius: 8px; transition: 0.3s; opacity: 0; z-index: 9999; }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast-error { background: #ff006e; }
+    .text-center { text-align: center; }
 `;
-document.head.appendChild(toastStyles);
+document.head.appendChild(style);
