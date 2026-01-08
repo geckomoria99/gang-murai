@@ -1,149 +1,166 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbywrFbC5j8WDXlAiQ-N1ztrCgBF4hZnlItFpcP6p77DZLiEI1YvVXb0_wW26L3mHJ4V/exec";
+/*******************************
+ * KONFIGURASI
+ *******************************/
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbzO55YCPFDNd9WQPykDCt3NqL4gPjLsZJ-kk1crNiHmWOKxQCKaUa_VLKBmvUrtx8L6/exec";
 
-let role = "guest";
+let currentRole = "guest";
 
-/* ================= INIT ================= */
+/*******************************
+ * ELEMENT DOM
+ *******************************/
+const loginScreen = document.getElementById("loginScreen");
+const mainScreen = document.getElementById("mainScreen");
+const adminLoginForm = document.getElementById("adminLoginForm");
+const userRoleText = document.getElementById("userRole");
 
-window.onload = () => {
-  testAPI();
+const guestBtn = document.getElementById("guestBtn");
+const adminLoginBtn = document.getElementById("adminLoginBtn");
+const loginBtn = document.getElementById("loginBtn");
+const cancelLoginBtn = document.getElementById("cancelLoginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+
+const passwordInput = document.getElementById("password");
+
+/*******************************
+ * LOGIN LOGIC
+ *******************************/
+guestBtn.onclick = () => {
+  currentRole = "guest";
+  enterApp();
 };
 
-function testAPI() {
-  fetch(API_URL + "?action=ping")
-    .then(res => res.json())
-    .then(res => {
-      console.log("API OK:", res);
-    })
-    .catch(err => {
-      alert("API TIDAK TERHUBUNG");
-      console.error(err);
-    });
-}
+adminLoginBtn.onclick = () => {
+  adminLoginForm.classList.remove("hidden");
+};
 
-/* ================= LOGIN ================= */
+cancelLoginBtn.onclick = () => {
+  adminLoginForm.classList.add("hidden");
+  passwordInput.value = "";
+};
 
-function loginGuest() {
-  role = "guest";
-  startApp();
-}
+loginBtn.onclick = async () => {
+  const password = passwordInput.value.trim();
+  if (!password) {
+    alert("Password tidak boleh kosong");
+    return;
+  }
 
-function loginAdmin() {
-  const password = document.getElementById("adminPass").value;
+  await loginAdmin(password);
+};
 
-  fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "login",
-      password
-    })
-  })
-  .then(res => res.json())
-  .then(res => {
-    if (res.success) {
-      role = "admin";
-      startApp();
+logoutBtn.onclick = () => {
+  location.reload();
+};
+
+/*******************************
+ * LOGIN ADMIN (CORS SAFE)
+ *******************************/
+async function loginAdmin(password) {
+  try {
+    const url =
+      API_URL +
+      "?action=login&password=" +
+      encodeURIComponent(password);
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.success) {
+      currentRole = "admin";
+      enterApp();
     } else {
       alert("Password admin salah");
     }
-  })
-  .catch(err => {
-    alert("Login gagal");
+  } catch (err) {
     console.error(err);
-  });
+    alert("Gagal koneksi ke server");
+  }
 }
 
-function startApp() {
-  document.getElementById("login").classList.add("hidden");
-  document.getElementById("app").classList.remove("hidden");
-  document.getElementById("role").innerText = role.toUpperCase();
-  loadPage("pengumuman");
-}
+/*******************************
+ * MASUK APLIKASI
+ *******************************/
+function enterApp() {
+  loginScreen.classList.add("hidden");
+  mainScreen.classList.remove("hidden");
 
-function logout() {
-  location.reload();
-}
+  userRoleText.textContent =
+    currentRole === "admin" ? "Admin" : "Guest";
 
-/* ================= NAV ================= */
-
-function loadPage(page) {
-  if (page === "pengumuman") loadPengumuman();
-  if (page === "iuran") loadIuran();
-  if (page === "kas") loadKas();
-  if (page === "ronda") loadRonda();
-}
-
-/* ================= DATA ================= */
-
-function loadPengumuman() {
-  fetch(API_URL + "?action=getPengumuman")
-    .then(res => res.json())
-    .then(res => {
-      let html = "<h3>Pengumuman</h3>";
-
-      if (!res.data || res.data.length <= 1) {
-        html += "<p>Tidak ada pengumuman</p>";
+  document
+    .querySelectorAll(".admin-only")
+    .forEach((el) => {
+      if (currentRole === "admin") {
+        el.classList.remove("hidden");
       } else {
-        res.data.slice(1).forEach(r => {
-          html += `
-            <div>
-              <b>${r[2]}</b><br>
-              ${r[3]}
-              <hr>
-            </div>`;
-        });
+        el.classList.add("hidden");
       }
-
-      document.getElementById("content").innerHTML = html;
-    })
-    .catch(err => {
-      console.error(err);
-      document.getElementById("content").innerHTML = "Gagal load pengumuman";
     });
+
+  initNavigation();
 }
 
-function loadIuran() {
-  fetch(API_URL + "?action=getIuran")
-    .then(res => res.json())
-    .then(res => {
-      renderTable("Iuran Bulanan", res.data);
+/*******************************
+ * NAVIGASI MENU
+ *******************************/
+function initNavigation() {
+  const navItems = document.querySelectorAll(".nav-item");
+  const pages = document.querySelectorAll(".page");
+
+  navItems.forEach((btn) => {
+    btn.onclick = () => {
+      navItems.forEach((b) => b.classList.remove("active"));
+      pages.forEach((p) => p.classList.remove("active"));
+
+      btn.classList.add("active");
+      document
+        .getElementById(btn.dataset.page + "Page")
+        .classList.add("active");
+    };
+  });
+
+  // load awal
+  loadPengumuman();
+}
+
+/*******************************
+ * FETCH DATA (GET ONLY)
+ *******************************/
+async function loadPengumuman() {
+  try {
+    const res = await fetch(API_URL + "?action=pengumuman");
+    const data = await res.json();
+
+    const container = document.getElementById("pengumumanList");
+    container.innerHTML = "";
+
+    data.forEach((item) => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <h3>${item.judul}</h3>
+        <p>${item.isi}</p>
+        <small>${item.tanggal}</small>
+      `;
+      container.appendChild(div);
     });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+/*******************************
+ * PLACEHOLDER MODULE
+ *******************************/
+function loadIuran() {
+  console.log("Load iuran");
 }
 
 function loadKas() {
-  fetch(API_URL + "?action=getKas")
-    .then(res => res.json())
-    .then(res => {
-      renderTable("Uang Kas", res.data);
-    });
+  console.log("Load kas");
 }
 
 function loadRonda() {
-  fetch(API_URL + "?action=getRonda")
-    .then(res => res.json())
-    .then(res => {
-      renderTable("Jadwal Ronda", res.data);
-    });
-}
-
-/* ================= UTIL ================= */
-
-function renderTable(title, data) {
-  let html = `<h3>${title}</h3>`;
-
-  if (!data || data.length === 0) {
-    html += "<p>Data kosong</p>";
-  } else {
-    html += "<table border='1'>";
-    data.forEach(row => {
-      html += "<tr>";
-      row.forEach(col => {
-        html += `<td>${col}</td>`;
-      });
-      html += "</tr>";
-    });
-    html += "</table>";
-  }
-
-  document.getElementById("content").innerHTML = html;
+  console.log("Load ronda");
 }
