@@ -2,7 +2,7 @@
     --primary-color: #4361ee;
     --primary-dark: #3a56d4;
     --secondary-color: #3f37c9;
-    --success-color: #00b894; /* Diubah ke hijau solid untuk konsistensi */
+    --success-color: #00b894;
     --danger-color: #ff006e;
     --warning-color: #ffbe0b;
     --light-color: #f8f9fa;
@@ -13,6 +13,7 @@
     --transition: all 0.3s ease;
 }
 
+/* Reset Dasar untuk Mobile */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -20,144 +21,147 @@ body {
     background-color: #f5f7fb;
     color: var(--dark-color);
     line-height: 1.6;
+    overflow-x: hidden; /* Mencegah konten keluar layar di HP */
+    width: 100%;
 }
 
-/* Layout Container */
-.app-container { max-width: 100%; height: 100vh; overflow: hidden; position: relative; }
-
-.screen {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    display: flex; flex-direction: column; transition: var(--transition);
+.app-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
 }
 
-.content { flex: 1; padding: 20px; padding-bottom: 80px; overflow-y: auto; }
+/* Header */
+.app-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 15px;
+    flex-shrink: 0;
+    z-index: 100;
+}
 
-/* Header & Nav */
-.app-header { background-color: var(--primary-color); color: white; padding: 15px 20px; box-shadow: var(--box-shadow); z-index: 10; }
 .header-content { display: flex; justify-content: space-between; align-items: center; }
-.header-content h1 { font-size: 1.5rem; font-weight: 600; }
+.header-content h1 { font-size: 1.2rem; }
 
-.bottom-nav {
-    display: flex; justify-content: space-around; background-color: white;
-    border-top: 1px solid #eee; padding: 10px 0; position: fixed;
-    bottom: 0; left: 0; right: 0; z-index: 10;
+/* Content Area */
+.content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    padding-bottom: 90px; /* Jarak untuk navigasi bawah */
 }
 
-.nav-item {
-    display: flex; flex-direction: column; align-items: center; background: none;
-    border: none; color: var(--gray-color); cursor: pointer; transition: var(--transition);
-    padding: 5px; min-width: 60px;
-}
-.nav-item.active { color: var(--primary-color); }
-.nav-item i { font-size: 1.2rem; margin-bottom: 5px; }
-.nav-item span { font-size: 0.7rem; }
-
-/* Page States */
-.page { display: none; }
+.page { display: none; width: 100%; }
 .page.active { display: block; animation: fadeIn 0.3s ease; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 
-/* Table System (Fixed & No Doubles) */
+/* Tabel Responsif Kunci Utama */
 .table-container {
     width: 100%;
-    overflow-x: auto;
-    background-color: white;
-    border-radius: var(--border-radius);
+    overflow-x: auto; /* Aktifkan scroll kanan-kiri */
+    background: white;
+    border-radius: 12px;
     box-shadow: var(--box-shadow);
-    -webkit-overflow-scrolling: touch;
+    margin-bottom: 20px;
+    -webkit-overflow-scrolling: touch; /* Scroll halus di iPhone */
 }
 
 .data-table {
     width: 100%;
-    min-width: 1000px; /* Memaksa scroll horizontal di layar kecil */
+    min-width: 800px; /* Jangan terlalu lebar agar tidak rusak */
     border-collapse: collapse;
 }
 
 .data-table th, .data-table td {
-    padding: 12px 15px;
+    padding: 12px;
     text-align: left;
     border-bottom: 1px solid #eee;
     white-space: nowrap;
 }
 
-.data-table th { background-color: #f8f9fa; font-weight: 600; }
-
-/* Custom Checkbox (Centang Hijau) */
-.checkbox-container { display: flex; justify-content: center; align-items: center; }
-
+/* Checkbox Centang Hijau */
+.checkbox-container { display: flex; justify-content: center; }
 .checkbox-container input[type="checkbox"] {
     -webkit-appearance: none;
     appearance: none;
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     border: 2px solid #ddd;
-    border-radius: 6px;
+    border-radius: 5px;
     background-color: #fff;
     position: relative;
-    cursor: default;
+    cursor: pointer;
 }
-
 .checkbox-container input[type="checkbox"]:checked {
-    background-color: var(--success-color) !important;
-    border-color: var(--success-color) !important;
+    background-color: var(--success-color);
+    border-color: var(--success-color);
 }
-
 .checkbox-container input[type="checkbox"]:checked::after {
-    content: '';
+    content: '✔';
+    color: white;
+    font-size: 14px;
     position: absolute;
-    left: 7px; top: 3px;
-    width: 5px; height: 10px;
-    border: solid white;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
+    left: 3px;
+    top: -2px;
 }
-
 .checkbox-container input[type="checkbox"]:disabled { opacity: 1 !important; }
 
-/* Stats & Kas Dashboard */
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
-.stat-card { background: white; padding: 20px; border-radius: 16px; display: flex; align-items: center; gap: 15px; box-shadow: var(--box-shadow); }
-.stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-.total .stat-icon { background: rgba(67, 97, 238, 0.1); color: var(--primary-color); }
-.income .stat-icon { background: rgba(0, 184, 148, 0.1); color: var(--success-color); }
-.expense .stat-icon { background: rgba(255, 0, 110, 0.1); color: var(--danger-color); }
+/* Dashboard Kas */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* 1 Kolom di HP */
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.stat-card {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: var(--box-shadow);
+}
 
-/* Accordion Kas */
-.month-accordion { background: white; border-radius: 12px; margin-bottom: 10px; overflow: hidden; box-shadow: var(--box-shadow); }
-.accordion-header { padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f1f1; }
-.accordion-content { padding: 0; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
-.month-accordion.active .accordion-content { max-height: 2000px; padding: 15px; }
+/* Navigasi Bawah Mobile */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+    border-top: 1px solid #eee;
+    z-index: 1000;
+}
+.nav-item {
+    background: none; border: none; color: #888;
+    display: flex; flex-direction: column; align-items: center;
+    font-size: 0.7rem; cursor: pointer;
+}
+.nav-item.active { color: var(--primary-color); }
+.nav-item i { font-size: 1.2rem; margin-bottom: 3px; }
 
-.badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
-.badge-in { background: #e6fff6; color: #00b894; }
-.badge-out { background: #fff0f5; color: #ff006e; }
+/* Visual Ronda (Tetap Sama) */
+.ronda-visual-container { display: flex; flex-direction: column; gap: 12px; }
+.ronda-item { background: white; padding: 15px; border-radius: 12px; box-shadow: var(--box-shadow); }
+.ronda-bar-bg { width: 100%; height: 25px; background: #eee; border-radius: 50px; overflow: hidden; position: relative; }
+.ronda-bar-fill { height: 100%; background: var(--primary-color); transition: width 0.5s; }
+.ronda-bar-text { position: absolute; width: 100%; text-align: center; line-height: 25px; font-size: 0.7rem; font-weight: bold; }
+.status-ronda .ronda-bar-fill { background: var(--success-color) !important; }
 
-/* Ronda Visual System */
-.ronda-visual-container { display: flex; flex-direction: column; gap: 15px; padding: 10px 0; }
-.ronda-item { background: white; padding: 15px; border-radius: 12px; box-shadow: var(--box-shadow); border: 1px solid #eee; }
-.ronda-info { display: flex; justify-content: space-between; margin-bottom: 10px; }
-.ronda-name { font-weight: 700; color: var(--dark-color); }
-.ronda-bar-bg { width: 100%; height: 30px; background: #f0f2f5; border-radius: 8px; position: relative; overflow: hidden; border: 1px solid #e0e0e0; }
-.ronda-bar-fill { height: 100%; background: linear-gradient(90deg, #4361ee, #3f37c9); transition: width 0.8s ease-in-out; }
-.ronda-bar-text { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; z-index: 2; pointer-events: none; }
+/* Loading & Utils */
+.loading-indicator { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+.spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
 
-.status-ronda .ronda-bar-fill { background: linear-gradient(90deg, #00b894, #00cec9) !important; }
-.status-ronda .ronda-bar-text { color: white !important; }
-
-/* Buttons & Utils */
-.btn { padding: 10px 15px; border-radius: var(--border-radius); border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-weight: 500; }
-.btn-primary { background: var(--primary-color); color: white; }
-.btn-danger { background: var(--danger-color); color: white; }
-.btn-small { padding: 5px 10px; font-size: 0.8rem; }
-
-.loading-indicator { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.spinner { width: 40px; height: 40px; border: 4px solid rgba(67,97,238,0.1); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s infinite; }
-
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes spin { to { transform: rotate(360deg); } }
 
-/* Mobile Optimization */
-@media (max-width: 768px) {
-    .bottom-nav { border-radius: 0; }
-    .stat-card { padding: 15px; }
+/* Media Query Tablet/Desktop */
+@media (min-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(3, 1fr); }
+    .bottom-nav { max-width: 480px; left: 50%; transform: translateX(-50%); border-radius: 20px 20px 0 0; }
 }
