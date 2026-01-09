@@ -9,6 +9,7 @@ const csvUrls = {
 // Variabel Penampung Data Global
 let rawKasData = []; 
 let rawRondaData = [];
+let kasDataForChart = []; // Data untuk chart
 
 // DOM elements
 const refreshBtn = document.getElementById('refreshBtn');
@@ -137,7 +138,7 @@ function loadIuranBulanan() {
 }
 
 // ---------------------------------------------------------
-// 3. UANG KAS (DASHBOARD & LAPORAN) - PERBAIKAN SALDO AKUMULATIF YANG BENAR
+// 3. UANG KAS (DASHBOARD & LAPORAN) - DENGAN TOTAL PER BULAN
 // ---------------------------------------------------------
 function loadUangKas() {
     fetchAndParseCSV(csvUrls.kas)
@@ -198,7 +199,7 @@ function renderUangKas(data) {
         bulanData[row[1]].saldoBulan += saldoTransaksi;
     }
     
-    // Langkah 2: Urutkan bulan secara kronologis
+    // Langkah 2: Urutkan bulan secara kronologis untuk perhitungan kumulatif
     const urutanBulan = {
         'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
         'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
@@ -210,12 +211,23 @@ function renderUangKas(data) {
     let saldoKumulatifHinggaSekarang = 0;
     const bulanDenganSaldoKumulatif = [];
     
+    // Simpan data untuk chart dan PDF
+    kasDataForChart = [];
+    
     for (const bulanKey of sortedBulanKeys) {
         const bulan = bulanData[bulanKey];
         saldoKumulatifHinggaSekarang += bulan.saldoBulan;
         
         bulanDenganSaldoKumulatif.push({
             ...bulan,
+            saldoKumulatif: saldoKumulatifHinggaSekarang
+        });
+        
+        // Simpan untuk chart
+        kasDataForChart.push({
+            bulan: bulanKey,
+            pemasukan: bulan.totalMasuk,
+            pengeluaran: bulan.totalKeluar,
             saldoKumulatif: saldoKumulatifHinggaSekarang
         });
     }
@@ -231,9 +243,8 @@ function renderUangKas(data) {
     document.getElementById('statTotalKeluar').innerText = `Rp ${formatNumber(currentMonthOut)}`;
     
     // Langkah 5: Render accordion dengan urutan bulan terbaru di atas
-    // Kita perlu menghitung saldo kumulatif per transaksi untuk setiap bulan
-    // Pertama, buat peta saldo kumulatif per bulan
-    const saldoSebelumBulan = {}; // Saldo kumulatif sebelum bulan tertentu
+    // Buat peta saldo kumulatif per bulan
+    const saldoSebelumBulan = {};
     let saldoSebelum = 0;
     
     for (const bulanKey of sortedBulanKeys) {
@@ -259,6 +270,18 @@ function renderUangKas(data) {
                 </tr>`;
         }).join('');
         
+        // Tambahkan baris total per bulan (warna hijau)
+        const totalBulanHtml = `
+            <tr class="total-row" style="background-color: rgba(6, 214, 160, 0.1);">
+                <td colspan="2" class="font-weight-bold" style="text-align: right;">TOTAL ${bulanData.namaBulan.toUpperCase()}:</td>
+                <td class="font-weight-bold text-success">+${formatNumber(bulanData.totalMasuk)}</td>
+                <td class="font-weight-bold text-danger">-${formatNumber(bulanData.totalKeluar)}</td>
+                <td class="font-weight-bold text-right" style="background-color: rgba(6, 214, 160, 0.2);">
+                    Rp ${formatNumber(bulanData.saldoKumulatif)}
+                </td>
+            </tr>
+        `;
+        
         const accDiv = document.createElement('div');
         accDiv.className = `month-accordion ${idx === 0 ? 'active' : ''}`;
         
@@ -283,7 +306,10 @@ function renderUangKas(data) {
                                 <th>Saldo Kumulatif</th>
                             </tr>
                         </thead>
-                        <tbody>${rowsHtml}</tbody>
+                        <tbody>
+                            ${rowsHtml}
+                            ${totalBulanHtml}
+                        </tbody>
                     </table>
                 </div>
             </div>`;
@@ -302,13 +328,21 @@ function exportToExcel() {
 async function exportToPDF() {
     if (rawKasData.length <= 1) return alert("Data kas belum terisi!");
     showLoading(true);
+    
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
-        doc.setFontSize(18);
-        doc.text("LAPORAN KAS E-MURAI", 14, 20);
         
-        // Urutkan data berdasarkan bulan
+        // Header
+        doc.setFontSize(20);
+        doc.setFont(undefined, 'bold');
+        doc.text("LAPORAN KAS E-MURAI", 105, 20, { align: 'center' });
+        
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Periode: ${moment().format('DD MMMM YYYY')}`, 105, 28, { align: 'center' });
+        
+        // Urutkan data berdasarkan bulan untuk perhitungan kumulatif
         const grouped = {};
         for (let i = 1; i < rawKasData.length; i++) {
             const bulan = rawKasData[i][1];
@@ -316,7 +350,7 @@ async function exportToPDF() {
             grouped[bulan].push(rawKasData[i]);
         }
         
-        // Urutkan bulan
+        // Urutkan bulan secara kronologis
         const urutanBulan = {
             'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
             'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
@@ -325,35 +359,239 @@ async function exportToPDF() {
         const sortedMonths = Object.keys(grouped).sort((a, b) => urutanBulan[a] - urutanBulan[b]);
 
         let globalBalance = 0;
-        let currentY = 30;
+        let currentY = 40;
+        const pageWidth = doc.internal.pageSize.width;
+        const margin = 20;
+        const contentWidth = pageWidth - (2 * margin);
         
+        // Data untuk chart
+        const chartData = {
+            labels: [],
+            pemasukan: [],
+            pengeluaran: [],
+            saldo: []
+        };
+        
+        // Proses setiap bulan
         for (const bulan of sortedMonths) {
-            const rows = grouped[bulan].map(r => {
+            const rows = grouped[bulan];
+            let totalMasuk = 0;
+            let totalKeluar = 0;
+            
+            // Hitung total per bulan
+            rows.forEach(r => {
                 const vIn = parseInt(r[4]?.toString().replace(/[^0-9]/g, "")) || 0;
                 const vOut = parseInt(r[5]?.toString().replace(/[^0-9]/g, "")) || 0;
+                totalMasuk += vIn;
+                totalKeluar += vOut;
                 globalBalance += (vIn - vOut);
-                return [r[2], r[3], formatNumber(vIn), formatNumber(vOut), formatNumber(globalBalance)];
             });
-
-            doc.text(`Bulan: ${bulan}`, 14, currentY);
+            
+            // Simpan data untuk chart
+            chartData.labels.push(bulan);
+            chartData.pemasukan.push(totalMasuk);
+            chartData.pengeluaran.push(totalKeluar);
+            chartData.saldo.push(globalBalance);
+            
+            // Cek jika perlu halaman baru
+            if (currentY > 220) {
+                doc.addPage();
+                currentY = 20;
+            }
+            
+            // Header Bulan
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text(`Bulan: ${bulan}`, margin, currentY);
+            currentY += 8;
+            
+            // Table dengan transaksi
+            const tableRows = rows.map(r => {
+                const vIn = parseInt(r[4]?.toString().replace(/[^0-9]/g, "")) || 0;
+                const vOut = parseInt(r[5]?.toString().replace(/[^0-9]/g, "")) || 0;
+                return [r[2], r[3], formatNumber(vIn), formatNumber(vOut)];
+            });
+            
             doc.autoTable({
-                startY: currentY + 5,
-                head: [['Tgl', 'Keterangan', 'Masuk', 'Keluar', 'Saldo Kumulatif']],
-                body: rows,
+                startY: currentY,
+                head: [['Tgl', 'Keterangan', 'Masuk', 'Keluar']],
+                body: tableRows,
                 theme: 'grid',
-                headStyles: { fillColor: [67, 97, 238] },
-                didDrawPage: (d) => { currentY = d.cursor.y + 15; }
+                headStyles: { fillColor: [67, 97, 238], fontSize: 9 },
+                bodyStyles: { fontSize: 8 },
+                margin: { left: margin, right: margin },
+                didDrawPage: (d) => { currentY = d.cursor.y; }
             });
+            
+            currentY += 5;
+            
+            // Total per bulan dengan background hijau
+            doc.setFillColor(230, 255, 247); // Warna hijau muda
+            doc.rect(margin, currentY, contentWidth, 12, 'F');
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.text(`TOTAL ${bulan.toUpperCase()}:`, margin + 5, currentY + 8);
+            
+            doc.setFont(undefined, 'normal');
+            doc.text(`Pemasukan: Rp ${formatNumber(totalMasuk)}`, margin + 60, currentY + 8);
+            doc.text(`Pengeluaran: Rp ${formatNumber(totalKeluar)}`, margin + 120, currentY + 8);
+            
+            // Saldo kumulatif dengan background hijau lebih gelap
+            doc.setFillColor(200, 250, 237);
+            doc.rect(margin + 170, currentY, 30, 12, 'F');
+            
+            doc.setFont(undefined, 'bold');
+            doc.text(`Rp ${formatNumber(globalBalance)}`, margin + 175, currentY + 8);
+            
+            currentY += 20;
         }
         
-        // Tambahkan summary di akhir
-        currentY += 10;
+        // Halaman baru untuk chart
+        doc.addPage();
+        currentY = 20;
+        
+        // Chart 1: Pemasukan vs Pengeluaran
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text("GRAFIK PEMASUKAN vs PENGELUARAN", 105, currentY, { align: 'center' });
+        currentY += 15;
+        
+        // Buat chart menggunakan canvas HTML
+        const canvas1 = document.createElement('canvas');
+        canvas1.width = 500;
+        canvas1.height = 250;
+        document.body.appendChild(canvas1);
+        
+        const ctx1 = canvas1.getContext('2d');
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: [
+                    {
+                        label: 'Pemasukan',
+                        data: chartData.pemasukan,
+                        borderColor: '#06d6a0',
+                        backgroundColor: 'rgba(6, 214, 160, 0.1)',
+                        borderWidth: 2,
+                        fill: true
+                    },
+                    {
+                        label: 'Pengeluaran',
+                        data: chartData.pengeluaran,
+                        borderColor: '#ef476f',
+                        backgroundColor: 'rgba(239, 71, 111, 0.1)',
+                        borderWidth: 2,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Trend Pemasukan dan Pengeluaran per Bulan'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp ' + formatNumber(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Convert canvas to image dan tambahkan ke PDF
+        const chartImage1 = canvas1.toDataURL('image/png');
+        doc.addImage(chartImage1, 'PNG', margin, currentY, contentWidth, 80);
+        currentY += 90;
+        
+        // Chart 2: Saldo Kumulatif
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text("GRAFIK SALDO KUMULATIF", 105, currentY, { align: 'center' });
+        currentY += 15;
+        
+        const canvas2 = document.createElement('canvas');
+        canvas2.width = 500;
+        canvas2.height = 250;
+        document.body.appendChild(canvas2);
+        
+        const ctx2 = canvas2.getContext('2d');
+        new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: 'Saldo Kumulatif',
+                    data: chartData.saldo,
+                    borderColor: '#4361ee',
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Perkembangan Saldo Kas dari Waktu ke Waktu'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp ' + formatNumber(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        const chartImage2 = canvas2.toDataURL('image/png');
+        doc.addImage(chartImage2, 'PNG', margin, currentY, contentWidth, 80);
+        
+        // Hapus canvas dari DOM
+        document.body.removeChild(canvas1);
+        document.body.removeChild(canvas2);
+        
+        // Summary akhir
+        currentY += 100;
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
-        doc.text(`Total Saldo Akhir: Rp ${formatNumber(globalBalance)}`, 14, currentY);
+        doc.text("RINGKASAN AKHIR:", margin, currentY);
+        currentY += 8;
         
-        doc.save(`Laporan_Kas_EMurai_${moment().format('YYYYMMDD')}.pdf`);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Total Pemasukan Keseluruhan: Rp ${formatNumber(chartData.pemasukan.reduce((a, b) => a + b, 0))}`, margin + 10, currentY);
+        currentY += 7;
+        doc.text(`Total Pengeluaran Keseluruhan: Rp ${formatNumber(chartData.pengeluaran.reduce((a, b) => a + b, 0))}`, margin + 10, currentY);
+        currentY += 7;
+        doc.text(`Saldo Akhir: Rp ${formatNumber(globalBalance)}`, margin + 10, currentY);
+        
+        // Footer
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'italic');
+        doc.text(`Laporan dicetak pada: ${moment().format('DD/MM/YYYY HH:mm')}`, 105, 285, { align: 'center' });
+        doc.text(`© E-MURAI ${new Date().getFullYear()}`, 105, 290, { align: 'center' });
+        
+        // Simpan file
+        doc.save(`Laporan_Kas_Lengkap_EMurai_${moment().format('YYYYMMDD')}.pdf`);
+        
     } catch (err) { 
+        console.error("Error generating PDF:", err);
         alert("Gagal membuat PDF: " + err.message); 
     }
     finally { 
@@ -362,7 +600,7 @@ async function exportToPDF() {
 }
 
 // ---------------------------------------------------------
-// 4. JADWAL RONDA (SISTEM BAR VISUAL & SORTING)
+// 4. JADWAL RONDA
 // ---------------------------------------------------------
 function loadJadwalRonda() {
     fetchAndParseCSV(csvUrls.ronda)
@@ -402,7 +640,7 @@ function loadJadwalRonda() {
 
                 if (item.hariTerakhir === 0) {
                     persentase = 100;
-                    labelTeks = "SEDANG RONDA";
+                    labelTeks = "DIPILIH RONDA";
                     statusClass = "status-ronda";
                 } else {
                     persentase = maxHari > 0 ? (item.hariTerakhir / maxHari) * 100 : 0;
