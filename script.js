@@ -432,30 +432,119 @@ function loadJadwalRonda() {
 async function exportRondaPDF() {
     if (rawRondaData.length <= 1) return alert("Data ronda belum dimuat!");
     showLoading(true);
+    
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
-        doc.setFontSize(16);
-        doc.text("HISTORI JADWAL RONDA WARGA", 14, 20);
         
-        const rows = rawRondaData.slice(1).map(row => {
-            return row.map(cell => {
-                if (cell.toUpperCase() === 'TRUE') return 'V';
-                if (cell.toUpperCase() === 'FALSE') return '-';
-                return cell;
+        // Header PDF
+        doc.setFontSize(20);
+        doc.setFont(undefined, 'bold');
+        doc.text("LAPORAN JADWAL RONDA", 105, 20, { align: 'center' });
+        
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Perumahan E-Murai - Dicetak: ${moment().format('DD MMMM YYYY HH:mm')}`, 105, 28, { align: 'center' });
+        
+        // Data ronda (asumsi format CSV: header di baris 0, data mulai baris 1)
+        const headers = rawRondaData[0]; // Nama kolom: Nama, Tanggal1, Tanggal2, ...
+        const dataRows = rawRondaData.slice(1); // Data warga
+        
+        // Hilangkan kolom "Nama" dari headers tanggal
+        const dateHeaders = headers.slice(1); // Ambil semua header kecuali "Nama"
+        
+        // Konversi format data untuk lebih mudah diproses
+        // Struktur: { tanggal: "13 Desember 2025", warga: ["Kevin", "Masykur", "Yoga", ...] }
+        const jadwalPerTanggal = [];
+        
+        // Untuk setiap kolom tanggal (setelah kolom Nama)
+        dateHeaders.forEach((tanggal, colIndex) => {
+            const wargaBertugas = [];
+            
+            // Cek setiap warga untuk tanggal ini
+            dataRows.forEach((row, rowIndex) => {
+                const namaWarga = row[0]; // Nama dari kolom pertama
+                const statusRonda = row[colIndex + 1]; // Status ronda di tanggal tertentu (+1 karena kolom pertama adalah nama)
+                
+                // Jika TRUE atau ada nilai tertentu (sesuaikan dengan format data Anda)
+                if (statusRonda && statusRonda.toString().toUpperCase() === 'TRUE') {
+                    wargaBertugas.push(`${rowIndex + 1}. ${namaWarga}`);
+                }
             });
+            
+            // Hanya tambahkan jika ada warga yang bertugas di tanggal ini
+            if (wargaBertugas.length > 0) {
+                jadwalPerTanggal.push({
+                    tanggal: tanggal,
+                    warga: wargaBertugas
+                });
+            }
         });
-
-        doc.autoTable({
-            startY: 30,
-            head: [rawRondaData[0]],
-            body: rows,
-            theme: 'grid',
-            headStyles: { fillColor: [67, 97, 238], fontSize: 8 },
-            styles: { fontSize: 7 }
-        });
-
-        doc.save(`Histori_Ronda_EMurai_${moment().format('YYYYMMDD')}.pdf`);
-    } catch (err) { alert("Error: " + err.message); }
-    finally { showLoading(false); }
+        
+        let currentY = 40;
+        const pageWidth = doc.internal.pageSize.width;
+        const margin = 20;
+        const contentWidth = pageWidth - (2 * margin);
+        
+        // Jika tidak ada data jadwal
+        if (jadwalPerTanggal.length === 0) {
+            doc.setFontSize(14);
+            doc.text("Tidak ada data jadwal ronda yang ditemukan.", margin, currentY);
+            currentY += 20;
+        } else {
+            // Tampilkan jadwal per tanggal
+            jadwalPerTanggal.forEach((jadwal, index) => {
+                // Cek jika perlu halaman baru
+                if (currentY > 250) {
+                    doc.addPage();
+                    currentY = 20;
+                }
+                
+                // Format tanggal lebih baik
+                let formattedDate = jadwal.tanggal;
+                try {
+                    // Coba parsing tanggal jika dalam format tertentu
+                    const dateMoment = moment(jadwal.tanggal, 'DD/MM/YYYY');
+                    if (dateMoment.isValid()) {
+                        formattedDate = dateMoment.format('DD MMMM YYYY');
+                    }
+                } catch (e) {
+                    // Jika gagal parsing, gunakan tanggal asli
+                }
+                
+                // Judul tanggal
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text(`Jadwal Ronda ${formattedDate}:`, margin, currentY);
+                currentY += 8;
+                
+                // List warga yang bertugas
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'normal');
+                
+                jadwal.warga.forEach((namaWarga, idx) => {
+                    doc.text(namaWarga, margin + 10, currentY);
+                    currentY += 7;
+                });
+                
+                currentY += 10; // Spasi antar tanggal
+            });
+        }
+        
+        // Footer
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'italic');
+        doc.text(`Total ${jadwalPerTanggal.length} hari jadwal ronda tercatat`, 105, 280, { align: 'center' });
+        doc.text(`© E-MURAI ${new Date().getFullYear()}`, 105, 285, { align: 'center' });
+        
+        // Simpan file
+        doc.save(`Jadwal_Ronda_EMurai_${moment().format('YYYYMMDD')}.pdf`);
+        
+    } catch (err) { 
+        console.error("Error generating PDF:", err);
+        alert("Gagal membuat PDF: " + err.message); 
+    }
+    finally { 
+        showLoading(false); 
+    }
 }
