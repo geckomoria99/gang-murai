@@ -351,7 +351,7 @@ async function exportToPDF() {
         const margin = 20;
         const contentWidth = pageWidth - (2 * margin);
         
-        // Data untuk chart
+        // Data untuk chart - akan digunakan nanti
         const chartData = {
             labels: [],
             pemasukan: [],
@@ -366,12 +366,20 @@ async function exportToPDF() {
             let totalKeluar = 0;
             
             // Hitung total per bulan
-            rows.forEach(r => {
+            const rowData = rows.map(r => {
                 const vIn = parseInt(r[4]?.toString().replace(/[^0-9]/g, "")) || 0;
                 const vOut = parseInt(r[5]?.toString().replace(/[^0-9]/g, "")) || 0;
                 totalMasuk += vIn;
                 totalKeluar += vOut;
+                const saldoSebelum = globalBalance;
                 globalBalance += (vIn - vOut);
+                return {
+                    tgl: r[2],
+                    ket: r[3],
+                    masuk: vIn,
+                    keluar: vOut,
+                    saldo: saldoSebelum + (vIn - vOut)
+                };
             });
             
             // Simpan data untuk chart
@@ -392,18 +400,29 @@ async function exportToPDF() {
             doc.text(`Bulan: ${bulan}`, margin, currentY);
             currentY += 8;
             
-            // Table dengan transaksi
-            const tableRows = rows.map(r => {
-                const vIn = parseInt(r[4]?.toString().replace(/[^0-9]/g, "")) || 0;
-                const vOut = parseInt(r[5]?.toString().replace(/[^0-9]/g, "")) || 0;
-                const saldoRow = globalBalance - (totalMasuk - totalKeluar) + (vIn - vOut);
-                return [r[2], r[3], formatNumber(vIn), formatNumber(vOut), formatNumber(saldoRow)];
-            });
+            // Siapkan data untuk tabel termasuk baris total
+            const tableData = rowData.map(r => [
+                r.tgl,
+                r.ket,
+                formatNumber(r.masuk),
+                formatNumber(r.keluar),
+                formatNumber(r.saldo)
+            ]);
             
+            // Tambahkan baris total sebagai bagian dari tabel
+            tableData.push([
+                '',
+                `TOTAL ${bulan.toUpperCase()}:`,
+                `+${formatNumber(totalMasuk)}`,
+                `-${formatNumber(totalKeluar)}`,
+                `Rp ${formatNumber(globalBalance)}`
+            ]);
+            
+            // Buat tabel dengan autoTable
             doc.autoTable({
                 startY: currentY,
                 head: [['Tgl', 'Keterangan', 'Masuk', 'Keluar', 'Saldo Kumulatif']],
-                body: tableRows,
+                body: tableData,
                 theme: 'grid',
                 headStyles: { 
                     fillColor: [67, 97, 238], 
@@ -416,59 +435,56 @@ async function exportToPDF() {
                     cellPadding: 3
                 },
                 columnStyles: {
-                    0: { cellWidth: 20, halign: 'center' },
-                    1: { cellWidth: 60 },
+                    0: { cellWidth: 15, halign: 'center' },
+                    1: { cellWidth: 55 },
                     2: { cellWidth: 25, halign: 'right' },
                     3: { cellWidth: 25, halign: 'right' },
                     4: { cellWidth: 30, halign: 'right' }
                 },
                 margin: { left: margin, right: margin },
-                didDrawPage: (d) => { currentY = d.cursor.y; }
+                willDrawCell: function(data) {
+                    // Beri styling khusus untuk baris terakhir (total)
+                    if (data.row.index === tableData.length - 1) {
+                        // Background hijau untuk seluruh baris
+                        doc.setFillColor(230, 255, 247);
+                        doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                        
+                        // Border atas hijau
+                        doc.setDrawColor(6, 214, 160);
+                        doc.setLineWidth(0.5);
+                        doc.line(data.cell.x, data.cell.y, data.cell.x + data.cell.width, data.cell.y);
+                        
+                        // Font bold untuk total
+                        doc.setFont(undefined, 'bold');
+                        
+                        // Background lebih gelap untuk kolom saldo
+                        if (data.column.index === 4) {
+                            doc.setFillColor(200, 250, 237);
+                            doc.roundedRect(data.cell.x + 1, data.cell.y + 1, data.cell.width - 2, data.cell.height - 2, 2, 2, 'F');
+                        }
+                    }
+                },
+                didParseCell: function(data) {
+                    // Parse khusus untuk baris total
+                    if (data.row.index === tableData.length - 1) {
+                        if (data.column.index === 2) {
+                            data.cell.styles.textColor = [6, 214, 160]; // Hijau untuk pemasukan
+                        } else if (data.column.index === 3) {
+                            data.cell.styles.textColor = [239, 71, 111]; // Merah untuk pengeluaran
+                        } else if (data.column.index === 4) {
+                            data.cell.styles.fontStyle = 'bold';
+                        }
+                    }
+                },
+                didDrawPage: (d) => { 
+                    currentY = d.cursor.y + 5; // Tambah sedikit spacing
+                }
             });
             
-            currentY += 5;
-            
-            // **PERBAIKAN DI SINI: Total per bulan sebagai bagian dari tabel**
-            // Buat total sebagai baris terakhir tabel
-            doc.setFontSize(9);
-            doc.setFont(undefined, 'bold');
-            
-            // Hitung posisi x untuk setiap kolom
-            const colPositions = [
-                margin + 2, // Kolom 0 (Tgl) - margin kecil
-                margin + 22, // Kolom 1 (Keterangan)
-                margin + 82, // Kolom 2 (Masuk)
-                margin + 107, // Kolom 3 (Keluar)
-                margin + 132 // Kolom 4 (Saldo)
-            ];
-            
-            // Baris total dengan background hijau
-            const totalY = currentY;
-            const totalHeight = 8;
-            
-            // Background hijau untuk seluruh baris
-            doc.setFillColor(230, 255, 247);
-            doc.rect(margin, totalY, contentWidth, totalHeight, 'F');
-            
-            // Border atas
-            doc.setDrawColor(6, 214, 160);
-            doc.setLineWidth(0.5);
-            doc.line(margin, totalY, margin + contentWidth, totalY);
-            
-            // Teks total
-            doc.text(`TOTAL ${bulan.toUpperCase()}:`, colPositions[1], totalY + 5);
-            doc.text(`+${formatNumber(totalMasuk)}`, colPositions[2], totalY + 5, { align: 'right' });
-            doc.text(`-${formatNumber(totalKeluar)}`, colPositions[3], totalY + 5, { align: 'right' });
-            
-            // Background hijau lebih gelap untuk saldo
-            doc.setFillColor(200, 250, 237);
-            doc.roundedRect(colPositions[4] - 2, totalY + 1, 30, totalHeight - 2, 2, 2, 'F');
-            doc.text(`Rp ${formatNumber(globalBalance)}`, colPositions[4], totalY + 5, { align: 'right' });
-            
-            currentY += 15;
+            currentY += 10; // Spacing antar bulan
         }
         
-        // Halaman baru untuk chart
+        // **HALAMAN GRAFIK** - Pastikan kita ada di halaman baru
         doc.addPage();
         currentY = 20;
         
@@ -476,146 +492,235 @@ async function exportToPDF() {
         doc.setFontSize(16);
         doc.setFont(undefined, 'bold');
         doc.text("GRAFIK PEMASUKAN vs PENGELUARAN", 105, currentY, { align: 'center' });
-        currentY += 15;
+        currentY += 10;
         
         // Buat chart menggunakan canvas HTML
         const canvas1 = document.createElement('canvas');
-        canvas1.width = 500;
-        canvas1.height = 250;
+        canvas1.width = 600;
+        canvas1.height = 300;
+        canvas1.style.display = 'none'; // Sembunyikan dari tampilan
         document.body.appendChild(canvas1);
         
         const ctx1 = canvas1.getContext('2d');
-        new Chart(ctx1, {
-            type: 'line',
-            data: {
-                labels: chartData.labels,
-                datasets: [
-                    {
-                        label: 'Pemasukan',
-                        data: chartData.pemasukan,
-                        borderColor: '#06d6a0',
-                        backgroundColor: 'rgba(6, 214, 160, 0.1)',
-                        borderWidth: 2,
-                        fill: true
-                    },
-                    {
-                        label: 'Pengeluaran',
-                        data: chartData.pengeluaran,
-                        borderColor: '#ef476f',
-                        backgroundColor: 'rgba(239, 71, 111, 0.1)',
-                        borderWidth: 2,
-                        fill: true
-                    }
-                ]
-            },
-            options: {
-                responsive: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Trend Pemasukan dan Pengeluaran per Bulan'
-                    },
-                    legend: {
-                        position: 'top'
-                    }
+        
+        // Pastikan chartData tidak kosong
+        if (chartData.labels.length > 0 && chartData.pemasukan.length > 0) {
+            new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Pemasukan',
+                            data: chartData.pemasukan,
+                            borderColor: '#06d6a0',
+                            backgroundColor: 'rgba(6, 214, 160, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Pengeluaran',
+                            data: chartData.pengeluaran,
+                            borderColor: '#ef476f',
+                            backgroundColor: 'rgba(239, 71, 111, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return 'Rp ' + formatNumber(value);
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Trend Pemasukan dan Pengeluaran per Bulan',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 9
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: {
+                                    size: 9
+                                },
+                                callback: function(value) {
+                                    if (value >= 1000000) {
+                                        return 'Rp ' + (value / 1000000).toFixed(1) + 'jt';
+                                    } else if (value >= 1000) {
+                                        return 'Rp ' + (value / 1000).toFixed(0) + 'k';
+                                    }
+                                    return 'Rp ' + value;
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
-        
-        // Convert canvas to image dan tambahkan ke PDF
-        const chartImage1 = canvas1.toDataURL('image/png');
-        doc.addImage(chartImage1, 'PNG', margin, currentY, contentWidth, 80);
-        currentY += 90;
+            });
+            
+            // Tunggu sebentar untuk memastikan chart selesai dirender
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Convert canvas to image dan tambahkan ke PDF
+            const chartImage1 = canvas1.toDataURL('image/png', 1.0);
+            doc.addImage(chartImage1, 'PNG', margin, currentY, contentWidth, 80);
+            currentY += 90;
+        }
         
         // Chart 2: Saldo Kumulatif
         doc.setFontSize(16);
         doc.setFont(undefined, 'bold');
         doc.text("GRAFIK SALDO KUMULATIF", 105, currentY, { align: 'center' });
-        currentY += 15;
+        currentY += 10;
         
         const canvas2 = document.createElement('canvas');
-        canvas2.width = 500;
-        canvas2.height = 250;
+        canvas2.width = 600;
+        canvas2.height = 300;
+        canvas2.style.display = 'none';
         document.body.appendChild(canvas2);
         
         const ctx2 = canvas2.getContext('2d');
-        new Chart(ctx2, {
-            type: 'line',
-            data: {
-                labels: chartData.labels,
-                datasets: [{
-                    label: 'Saldo Kumulatif',
-                    data: chartData.saldo,
-                    borderColor: '#4361ee',
-                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Perkembangan Saldo Kas dari Waktu ke Waktu'
-                    },
-                    legend: {
-                        position: 'top'
-                    }
+        
+        if (chartData.labels.length > 0 && chartData.saldo.length > 0) {
+            new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Saldo Kumulatif',
+                        data: chartData.saldo,
+                        borderColor: '#4361ee',
+                        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        ticks: {
-                            callback: function(value) {
-                                return 'Rp ' + formatNumber(value);
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Perkembangan Saldo Kas dari Waktu ke Waktu',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 9
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                font: {
+                                    size: 9
+                                },
+                                callback: function(value) {
+                                    if (value >= 1000000) {
+                                        return 'Rp ' + (value / 1000000).toFixed(1) + 'jt';
+                                    } else if (value >= 1000) {
+                                        return 'Rp ' + (value / 1000).toFixed(0) + 'k';
+                                    }
+                                    return 'Rp ' + value;
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
-        
-        const chartImage2 = canvas2.toDataURL('image/png');
-        doc.addImage(chartImage2, 'PNG', margin, currentY, contentWidth, 80);
+            });
+            
+            // Tunggu sebentar untuk memastikan chart selesai dirender
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            const chartImage2 = canvas2.toDataURL('image/png', 1.0);
+            doc.addImage(chartImage2, 'PNG', margin, currentY, contentWidth, 80);
+            currentY += 90;
+        }
         
         // Hapus canvas dari DOM
-        document.body.removeChild(canvas1);
-        document.body.removeChild(canvas2);
+        if (canvas1.parentNode) document.body.removeChild(canvas1);
+        if (canvas2.parentNode) document.body.removeChild(canvas2);
         
-        // Summary akhir
-        currentY += 100;
+        // Summary akhir di halaman yang sama dengan chart
+        currentY += 10;
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
-        doc.text("RINGKASAN AKHIR:", margin, currentY);
+        doc.text("RINGKASAN AKHIR", margin, currentY);
         currentY += 8;
         
+        const totalPemasukan = chartData.pemasukan.reduce((a, b) => a + b, 0);
+        const totalPengeluaran = chartData.pengeluaran.reduce((a, b) => a + b, 0);
+        
         doc.setFont(undefined, 'normal');
-        doc.text(`Total Pemasukan Keseluruhan: Rp ${formatNumber(chartData.pemasukan.reduce((a, b) => a + b, 0))}`, margin + 10, currentY);
-        currentY += 7;
-        doc.text(`Total Pengeluaran Keseluruhan: Rp ${formatNumber(chartData.pengeluaran.reduce((a, b) => a + b, 0))}`, margin + 10, currentY);
-        currentY += 7;
-        doc.text(`Saldo Akhir: Rp ${formatNumber(globalBalance)}`, margin + 10, currentY);
+        doc.setFontSize(10);
+        
+        // Buat box untuk ringkasan
+        const summaryWidth = contentWidth;
+        const summaryHeight = 25;
+        
+        // Background untuk ringkasan
+        doc.setFillColor(245, 245, 245);
+        doc.rect(margin, currentY, summaryWidth, summaryHeight, 'F');
+        
+        // Border
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.3);
+        doc.rect(margin, currentY, summaryWidth, summaryHeight);
+        
+        // Isi ringkasan
+        const col1 = margin + 10;
+        const col2 = margin + summaryWidth / 2;
+        
+        doc.text(`Total Pemasukan: Rp ${formatNumber(totalPemasukan)}`, col1, currentY + 8);
+        doc.text(`Total Pengeluaran: Rp ${formatNumber(totalPengeluaran)}`, col1, currentY + 16);
+        
+        doc.setFont(undefined, 'bold');
+        doc.setFontSize(11);
+        doc.text(`Saldo Akhir: Rp ${formatNumber(globalBalance)}`, col2, currentY + 12);
         
         // Footer
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont(undefined, 'italic');
         doc.text(`Laporan dicetak pada: ${moment().format('DD/MM/YYYY HH:mm')}`, 105, 285, { align: 'center' });
         doc.text(`© E-MURAI ${new Date().getFullYear()}`, 105, 290, { align: 'center' });
         
         // Simpan file
-        doc.save(`Laporan_Kas_Lengkap_EMurai_${moment().format('YYYYMMDD')}.pdf`);
+        doc.save(`Laporan_Kas_Lengkap_EMurai_${moment().format('YYYYMMDD_HHmm')}.pdf`);
         
     } catch (err) { 
         console.error("Error generating PDF:", err);
@@ -625,7 +730,6 @@ async function exportToPDF() {
         showLoading(false); 
     }
 }
-
 function exportToExcel() {
     if (rawKasData.length === 0) return alert("Tunggu data kas dimuat!");
     const ws = XLSX.utils.aoa_to_sheet(rawKasData);
