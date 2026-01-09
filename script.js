@@ -15,7 +15,7 @@ const refreshBtn = document.getElementById('refreshBtn');
 const lastUpdate = document.getElementById('lastUpdate');
 const loadingIndicator = document.getElementById('loadingIndicator');
 const navItems = document.querySelectorAll('.nav-item');
-const pages = document.querySelectorAll('.pages');
+const pages = document.querySelectorAll('.page'); // PERBAIKAN: dari '.pages' ke '.page'
 
 // Containers
 const pengumumanList = document.getElementById('pengumumanList');
