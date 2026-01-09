@@ -137,7 +137,7 @@ function loadIuranBulanan() {
 }
 
 // ---------------------------------------------------------
-// 3. UANG KAS (DASHBOARD & LAPORAN)
+// 3. UANG KAS (DASHBOARD & LAPORAN) - AKUMULATIF
 // ---------------------------------------------------------
 function loadUangKas() {
     fetchAndParseCSV(csvUrls.kas)
@@ -184,29 +184,36 @@ function renderUangKas(data) {
     document.getElementById('statTotalMasuk').innerText = `Rp ${formatNumber(currentMonthIn)}`;
     document.getElementById('statTotalKeluar').innerText = `Rp ${formatNumber(currentMonthOut)}`;
     
-    Object.keys(monthsGroup).reverse().forEach((m, idx) => {
+    let cumulativeBalance = 0; // saldo akumulatif
+
+    // Loop bulan dari paling lama ke terbaru agar akumulasi benar
+    Object.keys(monthsGroup).sort().forEach((m, idx) => {
         const accDiv = document.createElement('div');
         accDiv.className = `month-accordion ${idx === 0 ? 'active' : ''}`;
-        
+
         let subBalance = 0;
         let rowsHtml = monthsGroup[m].map(item => {
-            subBalance += (item.masuk - item.keluar);
+            const net = item.masuk - item.keluar;
+            subBalance += net;
+            const displayBalance = cumulativeBalance + subBalance; // saldo akumulatif
             return `
                 <tr>
                     <td>${item.tgl}</td>
                     <td>${item.ket}</td>
                     <td><span class="badge ${item.masuk > 0 ? 'badge-in' : ''}">${item.masuk > 0 ? '+' + formatNumber(item.masuk) : '-'}</span></td>
                     <td><span class="badge ${item.keluar > 0 ? 'badge-out' : ''}">${item.keluar > 0 ? '-' + formatNumber(item.keluar) : '-'}</span></td>
-                    <td class="text-right"><strong>${formatNumber(subBalance)}</strong></td>
+                    <td class="text-right"><strong>${formatNumber(displayBalance)}</strong></td>
                 </tr>`;
         }).join('');
+
+        cumulativeBalance += subBalance; // update untuk bulan berikutnya
 
         accDiv.innerHTML = `
             <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')">
                 <div class="acc-left"><i class="fas fa-calendar-check"></i> <span>${m}</span></div>
                 <div class="acc-right">
                     <span class="label-saldo-header">Saldo Akhir:</span>
-                    <span class="value-saldo-header">Rp ${formatNumber(subBalance)}</span>
+                    <span class="value-saldo-header">Rp ${formatNumber(cumulativeBalance)}</span>
                     <i class="fas fa-chevron-down ml-10"></i>
                 </div>
             </div>
@@ -226,7 +233,7 @@ function exportToExcel() {
     if (rawKasData.length === 0) return alert("Tunggu data kas dimuat!");
     const ws = XLSX.utils.aoa_to_sheet(rawKasData);
     const wb = XLSX.utils.book_new();
-    XLSUtils.book_append_sheet(wb, ws, "Laporan Kas");
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan Kas");
     XLSX.writeFile(wb, `Kas_EMURAI_${moment().format('YYYYMMDD')}.xlsx`);
 }
 
@@ -272,7 +279,7 @@ async function exportToPDF() {
 }
 
 // ---------------------------------------------------------
-// 4. JADWAL RONDA (SISTEM BAR VISUAL & SORTING)
+// 4. JADWAL RONDA
 // ---------------------------------------------------------
 function loadJadwalRonda() {
     fetchAndParseCSV(csvUrls.ronda)
@@ -289,7 +296,6 @@ function loadJadwalRonda() {
             const headers = data[0];
             const lastRondaIdx = headers.length - 1;
 
-            // Mapping & Sorting
             let rondaList = [];
             for (let i = 1; i < data.length; i++) {
                 rondaList.push({
@@ -298,7 +304,6 @@ function loadJadwalRonda() {
                 });
             }
 
-            // Urutan: Sedang Ronda (0) -> Terlama ke Terbaru
             rondaList.sort((a, b) => {
                 if (a.hariTerakhir === 0) return -1;
                 if (b.hariTerakhir === 0) return 1;
