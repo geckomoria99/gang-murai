@@ -147,31 +147,30 @@ function renderUangKas(data) {
     let currentMonthIn = 0;
     let currentMonthOut = 0;
     
-    // Mendapatkan nama bulan saat ini dalam Bahasa Inggris & Indonesia untuk pengecekan ganda
-    const monthEN = moment().format('MMMM').toLowerCase(); // "january"
-    const monthID = moment().locale('id').format('MMMM').toLowerCase(); // "januari"
+    // Ambil baris terakhir untuk menentukan "Bulan Terkini" secara otomatis
+    const barisTerakhir = data[data.length - 1];
+    const namaBulanTerkini = barisTerakhir[1]; // Mengambil nama bulan dari data paling bawah
 
     const monthsGroup = {};
 
     for (let i = 1; i < data.length; i++) {
         const row = data[i];
-        if (row.length < 5) continue;
+        if (!row[1]) continue; // Skip jika kolom bulan kosong
 
-        const bulanSheet = (row[1] || "").toString().toLowerCase(); // Ambil kolom Bulan dari Sheets
-        
-        // Bersihkan angka dari simbol Rp, titik, atau koma agar bisa dihitung
+        // Konversi angka: Hapus titik, koma, dan Rp
         const masuk = parseInt(row[4].toString().replace(/[^0-9]/g, "")) || 0;
         const keluar = parseInt(row[5].toString().replace(/[^0-9]/g, "")) || 0;
 
+        // Hitung Saldo Keseluruhan
         grandTotalSaldo += (masuk - keluar);
 
-        // LOGIKA PERBAIKAN: Cek apakah nama bulan di Sheets mengandung nama bulan saat ini
-        // Contoh: Jika di Sheets "Januari 2026" dan bulan ini "januari", maka COCOK.
-        if (bulanSheet.includes(monthEN) || bulanSheet.includes(monthID)) {
+        // Jika bulan di baris ini sama dengan bulan di baris paling bawah, masukkan ke "Bulan Ini"
+        if (row[1] === namaBulanTerkini) {
             currentMonthIn += masuk;
             currentMonthOut += keluar;
         }
 
+        // Kelompokkan untuk tampilan Accordion
         if (!monthsGroup[row[1]]) monthsGroup[row[1]] = [];
         monthsGroup[row[1]].push({
             tgl: row[2],
@@ -181,12 +180,17 @@ function renderUangKas(data) {
         });
     }
 
-    // Update Angka di Kartu Dashboard dengan Animasi Counter Sederhana
+    // Tampilkan ke Dashboard
     document.getElementById('statTotalSaldo').innerText = `Rp ${formatNumber(grandTotalSaldo)}`;
     document.getElementById('statTotalMasuk').innerText = `Rp ${formatNumber(currentMonthIn)}`;
     document.getElementById('statTotalKeluar').innerText = `Rp ${formatNumber(currentMonthOut)}`;
+    
+    // (Opsional) Ganti teks "Bulan Ini" agar dinamis sesuai data
+    const textLabels = document.querySelectorAll('.stat-info span');
+    if(textLabels[1]) textLabels[1].innerText = `Masuk (${namaBulanTerkini})`;
+    if(textLabels[2]) textLabels[2].innerText = `Keluar (${namaBulanTerkini})`;
 
-    // Render List Accordion (Urutan Terbaru di Atas)
+    // Render List Accordion
     Object.keys(monthsGroup).reverse().forEach((m, idx) => {
         const accDiv = document.createElement('div');
         accDiv.className = `month-accordion ${idx === 0 ? 'active' : ''}`;
