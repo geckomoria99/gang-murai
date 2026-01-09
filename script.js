@@ -147,30 +147,26 @@ function renderUangKas(data) {
     let currentMonthIn = 0;
     let currentMonthOut = 0;
     
-    // Ambil baris terakhir untuk menentukan "Bulan Terkini" secara otomatis
     const barisTerakhir = data[data.length - 1];
-    const namaBulanTerkini = barisTerakhir[1]; // Mengambil nama bulan dari data paling bawah
+    const namaBulanTerkini = barisTerakhir[1]; 
 
     const monthsGroup = {};
 
+    // 1. Hitung Semua Data
     for (let i = 1; i < data.length; i++) {
         const row = data[i];
-        if (!row[1]) continue; // Skip jika kolom bulan kosong
+        if (!row[1]) continue;
 
-        // Konversi angka: Hapus titik, koma, dan Rp
         const masuk = parseInt(row[4].toString().replace(/[^0-9]/g, "")) || 0;
         const keluar = parseInt(row[5].toString().replace(/[^0-9]/g, "")) || 0;
 
-        // Hitung Saldo Keseluruhan
         grandTotalSaldo += (masuk - keluar);
 
-        // Jika bulan di baris ini sama dengan bulan di baris paling bawah, masukkan ke "Bulan Ini"
         if (row[1] === namaBulanTerkini) {
             currentMonthIn += masuk;
             currentMonthOut += keluar;
         }
 
-        // Kelompokkan untuk tampilan Accordion
         if (!monthsGroup[row[1]]) monthsGroup[row[1]] = [];
         monthsGroup[row[1]].push({
             tgl: row[2],
@@ -180,24 +176,26 @@ function renderUangKas(data) {
         });
     }
 
-    // Tampilkan ke Dashboard
+    // Update Dashboard Atas
     document.getElementById('statTotalSaldo').innerText = `Rp ${formatNumber(grandTotalSaldo)}`;
     document.getElementById('statTotalMasuk').innerText = `Rp ${formatNumber(currentMonthIn)}`;
     document.getElementById('statTotalKeluar').innerText = `Rp ${formatNumber(currentMonthOut)}`;
     
-    // (Opsional) Ganti teks "Bulan Ini" agar dinamis sesuai data
     const textLabels = document.querySelectorAll('.stat-info span');
     if(textLabels[1]) textLabels[1].innerText = `Masuk (${namaBulanTerkini})`;
     if(textLabels[2]) textLabels[2].innerText = `Keluar (${namaBulanTerkini})`;
 
-    // Render List Accordion
+    // 2. Render List Accordion dengan Saldo Per Bulan
     Object.keys(monthsGroup).reverse().forEach((m, idx) => {
         const accDiv = document.createElement('div');
         accDiv.className = `month-accordion ${idx === 0 ? 'active' : ''}`;
         
         let subBalance = 0;
+        let runningTotalMonth = 0; // Untuk menghitung saldo akhir khusus bulan ini
+
         let rowsHtml = monthsGroup[m].map(item => {
-            subBalance += (item.masuk - item.keluar);
+            runningTotalMonth += (item.masuk - item.keluar);
+            subBalance = runningTotalMonth; 
             return `
                 <tr>
                     <td>${item.tgl}</td>
@@ -209,10 +207,18 @@ function renderUangKas(data) {
             `;
         }).join('');
 
+        // Tampilan Header: Kiri (Nama Bulan), Kanan (Saldo Akhir Bulan Ini)
         accDiv.innerHTML = `
             <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')">
-                <span><i class="fas fa-calendar-check"></i> ${m}</span>
-                <i class="fas fa-chevron-down"></i>
+                <div class="acc-left">
+                    <i class="fas fa-calendar-check"></i> 
+                    <span>${m}</span>
+                </div>
+                <div class="acc-right">
+                    <span class="label-saldo-header">Saldo Akhir:</span>
+                    <span class="value-saldo-header">Rp ${formatNumber(subBalance)}</span>
+                    <i class="fas fa-chevron-down ml-10"></i>
+                </div>
             </div>
             <div class="accordion-content">
                 <div class="table-container">
