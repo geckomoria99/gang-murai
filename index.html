@@ -86,10 +86,10 @@
                     </div>
                 
                     <div class="stats-grid">
-                        <div class="stat-card total">
-                            <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+                        <div class="stat-card total-balance-card">
+                            <div class="stat-icon"><i class="fas fa-university"></i></div>
                             <div class="stat-info">
-                                <span>Total Saldo</span>
+                                <span>Total Sisa Saldo (Kumulatif)</span>
                                 <h3 id="statTotalSaldo">Rp 0</h3>
                             </div>
                         </div>
@@ -108,7 +108,15 @@
                             </div>
                         </div>
                     </div>
-                
+                    
+                    <div class="charts-container">
+                        <div class="chart-card">
+                            <canvas id="flowChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <canvas id="balanceChart"></canvas>
+                        </div>
+                    </div>
                     <div id="kasContainer">
                         </div>
                 </div>
