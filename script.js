@@ -138,7 +138,7 @@ function loadIuranBulanan() {
 }
 
 // ---------------------------------------------------------
-// 3. UANG KAS (DASHBOARD & LAPORAN) - DENGAN TOTAL PER BULAN
+// 3. UANG KAS (DASHBOARD & LAPORAN) - DENGAN TOTAL PER BULAN & URUTAN TERBARU DI ATAS
 // ---------------------------------------------------------
 function loadUangKas() {
     fetchAndParseCSV(csvUrls.kas)
@@ -159,7 +159,6 @@ function renderUangKas(data) {
 
     // Langkah 1: Proses semua data untuk mendapatkan total per bulan dan urutan yang benar
     const bulanData = {};
-    const semuaTransaksi = []; // Menyimpan semua transaksi dalam urutan kronologis
     
     // Kumpulkan semua transaksi
     for (let i = 1; i < data.length; i++) {
@@ -179,8 +178,6 @@ function renderUangKas(data) {
             keluar,
             saldoTransaksi
         };
-        
-        semuaTransaksi.push(transaksi);
         
         // Kelompokkan per bulan
         if (!bulanData[row[1]]) {
@@ -242,7 +239,7 @@ function renderUangKas(data) {
     document.getElementById('statTotalMasuk').innerText = `Rp ${formatNumber(currentMonthIn)}`;
     document.getElementById('statTotalKeluar').innerText = `Rp ${formatNumber(currentMonthOut)}`;
     
-    // Langkah 5: Render accordion dengan urutan bulan terbaru di atas
+    // Langkah 5: Render accordion dengan urutan bulan TERBARU DI ATAS
     // Buat peta saldo kumulatif per bulan
     const saldoSebelumBulan = {};
     let saldoSebelum = 0;
@@ -252,7 +249,7 @@ function renderUangKas(data) {
         saldoSebelum += bulanData[bulanKey].saldoBulan;
     }
     
-    // Render dari bulan terbaru ke terlama
+    // Render dari bulan terbaru ke terlama (reverse untuk terbaru di atas)
     bulanDenganSaldoKumulatif.reverse().forEach((bulanData, idx) => {
         // Mulai dari saldo kumulatif sebelum bulan ini
         let saldoBerjalan = saldoSebelumBulan[bulanData.namaBulan];
@@ -270,15 +267,13 @@ function renderUangKas(data) {
                 </tr>`;
         }).join('');
         
-        // Tambahkan baris total per bulan (warna hijau)
+        // Tambahkan baris total per bulan (TIDAK menggunakan colspan, tapi cell per cell)
         const totalBulanHtml = `
-            <tr class="total-row" style="background-color: rgba(6, 214, 160, 0.1);">
-                <td colspan="2" class="font-weight-bold" style="text-align: right;">TOTAL ${bulanData.namaBulan.toUpperCase()}:</td>
+            <tr class="total-row">
+                <td colspan="2" class="font-weight-bold text-right">TOTAL ${bulanData.namaBulan.toUpperCase()}:</td>
                 <td class="font-weight-bold text-success">+${formatNumber(bulanData.totalMasuk)}</td>
                 <td class="font-weight-bold text-danger">-${formatNumber(bulanData.totalKeluar)}</td>
-                <td class="font-weight-bold text-right" style="background-color: rgba(6, 214, 160, 0.2);">
-                    Rp ${formatNumber(bulanData.saldoKumulatif)}
-                </td>
+                <td class="font-weight-bold text-right saldo-kumulatif">Rp ${formatNumber(bulanData.saldoKumulatif)}</td>
             </tr>
         `;
         
@@ -296,14 +291,14 @@ function renderUangKas(data) {
             </div>
             <div class="accordion-content">
                 <div class="table-container">
-                    <table class="data-table">
+                    <table class="data-table" style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr>
-                                <th>Tgl</th>
-                                <th>Keterangan</th>
-                                <th>Masuk</th>
-                                <th>Keluar</th>
-                                <th>Saldo Kumulatif</th>
+                                <th style="width: 15%;">Tgl</th>
+                                <th style="width: 35%;">Keterangan</th>
+                                <th style="width: 15%;">Masuk</th>
+                                <th style="width: 15%;">Keluar</th>
+                                <th style="width: 20%;">Saldo Kumulatif</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -315,14 +310,6 @@ function renderUangKas(data) {
             </div>`;
         kasContainer.appendChild(accDiv);
     });
-}
-
-function exportToExcel() {
-    if (rawKasData.length === 0) return alert("Tunggu data kas dimuat!");
-    const ws = XLSX.utils.aoa_to_sheet(rawKasData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Laporan Kas");
-    XLSX.writeFile(wb, `Kas_EMURAI_${moment().format('YYYYMMDD')}.xlsx`);
 }
 
 async function exportToPDF() {
@@ -342,7 +329,7 @@ async function exportToPDF() {
         doc.setFont(undefined, 'normal');
         doc.text(`Periode: ${moment().format('DD MMMM YYYY')}`, 105, 28, { align: 'center' });
         
-        // Urutkan data berdasarkan bulan untuk perhitungan kumulatif
+        // Proses data untuk perhitungan kumulatif
         const grouped = {};
         for (let i = 1; i < rawKasData.length; i++) {
             const bulan = rawKasData[i][1];
@@ -372,7 +359,7 @@ async function exportToPDF() {
             saldo: []
         };
         
-        // Proses setiap bulan
+        // Proses setiap bulan dalam urutan kronologis (lama ke baru)
         for (const bulan of sortedMonths) {
             const rows = grouped[bulan];
             let totalMasuk = 0;
@@ -409,42 +396,76 @@ async function exportToPDF() {
             const tableRows = rows.map(r => {
                 const vIn = parseInt(r[4]?.toString().replace(/[^0-9]/g, "")) || 0;
                 const vOut = parseInt(r[5]?.toString().replace(/[^0-9]/g, "")) || 0;
-                return [r[2], r[3], formatNumber(vIn), formatNumber(vOut)];
+                const saldoRow = globalBalance - (totalMasuk - totalKeluar) + (vIn - vOut);
+                return [r[2], r[3], formatNumber(vIn), formatNumber(vOut), formatNumber(saldoRow)];
             });
             
             doc.autoTable({
                 startY: currentY,
-                head: [['Tgl', 'Keterangan', 'Masuk', 'Keluar']],
+                head: [['Tgl', 'Keterangan', 'Masuk', 'Keluar', 'Saldo Kumulatif']],
                 body: tableRows,
                 theme: 'grid',
-                headStyles: { fillColor: [67, 97, 238], fontSize: 9 },
-                bodyStyles: { fontSize: 8 },
+                headStyles: { 
+                    fillColor: [67, 97, 238], 
+                    fontSize: 9,
+                    textColor: [255, 255, 255],
+                    halign: 'center'
+                },
+                bodyStyles: { 
+                    fontSize: 8,
+                    cellPadding: 3
+                },
+                columnStyles: {
+                    0: { cellWidth: 20, halign: 'center' },
+                    1: { cellWidth: 60 },
+                    2: { cellWidth: 25, halign: 'right' },
+                    3: { cellWidth: 25, halign: 'right' },
+                    4: { cellWidth: 30, halign: 'right' }
+                },
                 margin: { left: margin, right: margin },
                 didDrawPage: (d) => { currentY = d.cursor.y; }
             });
             
             currentY += 5;
             
-            // Total per bulan dengan background hijau
-            doc.setFillColor(230, 255, 247); // Warna hijau muda
-            doc.rect(margin, currentY, contentWidth, 12, 'F');
-            
-            doc.setFontSize(10);
+            // **PERBAIKAN DI SINI: Total per bulan sebagai bagian dari tabel**
+            // Buat total sebagai baris terakhir tabel
+            doc.setFontSize(9);
             doc.setFont(undefined, 'bold');
-            doc.text(`TOTAL ${bulan.toUpperCase()}:`, margin + 5, currentY + 8);
             
-            doc.setFont(undefined, 'normal');
-            doc.text(`Pemasukan: Rp ${formatNumber(totalMasuk)}`, margin + 60, currentY + 8);
-            doc.text(`Pengeluaran: Rp ${formatNumber(totalKeluar)}`, margin + 120, currentY + 8);
+            // Hitung posisi x untuk setiap kolom
+            const colPositions = [
+                margin + 2, // Kolom 0 (Tgl) - margin kecil
+                margin + 22, // Kolom 1 (Keterangan)
+                margin + 82, // Kolom 2 (Masuk)
+                margin + 107, // Kolom 3 (Keluar)
+                margin + 132 // Kolom 4 (Saldo)
+            ];
             
-            // Saldo kumulatif dengan background hijau lebih gelap
+            // Baris total dengan background hijau
+            const totalY = currentY;
+            const totalHeight = 8;
+            
+            // Background hijau untuk seluruh baris
+            doc.setFillColor(230, 255, 247);
+            doc.rect(margin, totalY, contentWidth, totalHeight, 'F');
+            
+            // Border atas
+            doc.setDrawColor(6, 214, 160);
+            doc.setLineWidth(0.5);
+            doc.line(margin, totalY, margin + contentWidth, totalY);
+            
+            // Teks total
+            doc.text(`TOTAL ${bulan.toUpperCase()}:`, colPositions[1], totalY + 5);
+            doc.text(`+${formatNumber(totalMasuk)}`, colPositions[2], totalY + 5, { align: 'right' });
+            doc.text(`-${formatNumber(totalKeluar)}`, colPositions[3], totalY + 5, { align: 'right' });
+            
+            // Background hijau lebih gelap untuk saldo
             doc.setFillColor(200, 250, 237);
-            doc.rect(margin + 170, currentY, 30, 12, 'F');
+            doc.roundedRect(colPositions[4] - 2, totalY + 1, 30, totalHeight - 2, 2, 2, 'F');
+            doc.text(`Rp ${formatNumber(globalBalance)}`, colPositions[4], totalY + 5, { align: 'right' });
             
-            doc.setFont(undefined, 'bold');
-            doc.text(`Rp ${formatNumber(globalBalance)}`, margin + 175, currentY + 8);
-            
-            currentY += 20;
+            currentY += 15;
         }
         
         // Halaman baru untuk chart
@@ -493,6 +514,9 @@ async function exportToPDF() {
                     title: {
                         display: true,
                         text: 'Trend Pemasukan dan Pengeluaran per Bulan'
+                    },
+                    legend: {
+                        position: 'top'
                     }
                 },
                 scales: {
@@ -545,6 +569,9 @@ async function exportToPDF() {
                     title: {
                         display: true,
                         text: 'Perkembangan Saldo Kas dari Waktu ke Waktu'
+                    },
+                    legend: {
+                        position: 'top'
                     }
                 },
                 scales: {
@@ -597,6 +624,14 @@ async function exportToPDF() {
     finally { 
         showLoading(false); 
     }
+}
+
+function exportToExcel() {
+    if (rawKasData.length === 0) return alert("Tunggu data kas dimuat!");
+    const ws = XLSX.utils.aoa_to_sheet(rawKasData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan Kas");
+    XLSX.writeFile(wb, `Kas_EMURAI_${moment().format('YYYYMMDD')}.xlsx`);
 }
 
 // ---------------------------------------------------------
