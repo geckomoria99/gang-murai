@@ -289,19 +289,24 @@ function loadJadwalRonda() {
             const headers = data[0];
             const lastRondaIdx = headers.length - 1;
 
-            // Mapping & Sorting
+              // Mapping & Sorting
             let rondaList = [];
             for (let i = 1; i < data.length; i++) {
+                // Pastikan kolom terakhir diambil sebagai angka murni
+                const nilaiHari = parseInt(data[i][lastRondaIdx]) || 0;
                 rondaList.push({
                     nama: data[i][0],
-                    hariTerakhir: parseInt(data[i][lastRondaIdx]) || 0
+                    hariTerakhir: nilaiHari
                 });
             }
-
-            // Urutan: Sedang Ronda (0) -> Terlama ke Terbaru
+            
+            // Logika Sorting yang Lebih Kuat:
             rondaList.sort((a, b) => {
-                if (a.hariTerakhir === 0) return -1;
-                if (b.hariTerakhir === 0) return 1;
+                // 1. Cek jika salah satu sedang ronda (nilai 0)
+                if (a.hariTerakhir === 0 && b.hariTerakhir !== 0) return -1; 
+                if (a.hariTerakhir !== 0 && b.hariTerakhir === 0) return 1;
+                
+                // 2. Jika keduanya bukan 0, urutkan dari yang TERBESAR ke terkecil
                 return b.hariTerakhir - a.hariTerakhir;
             });
 
