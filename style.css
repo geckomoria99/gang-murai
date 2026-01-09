@@ -1250,3 +1250,26 @@ input[type="checkbox"]:disabled {
         max-height: none;
     }
 }
+
+/* Tambahkan di CSS untuk styling baris total */
+.total-row {
+    font-weight: 600;
+    border-top: 2px solid var(--success-color) !important;
+}
+
+.total-row td {
+    font-weight: 600;
+    padding: 10px 6px !important;
+}
+
+.text-success {
+    color: var(--success-color) !important;
+}
+
+.text-danger {
+    color: var(--danger-color) !important;
+}
+
+.font-weight-bold {
+    font-weight: 700 !important;
+}
