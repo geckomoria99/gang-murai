@@ -665,3 +665,40 @@ body {
 .status-ronda .ronda-bar-text {
     text-shadow: none;
 }
+
+/* Warna khusus untuk Total Sisa Saldo */
+.total-balance-card {
+    background-color: #00b894 !important; /* Hijau */
+    color: white !important;
+}
+
+.total-balance-card .stat-info span, 
+.total-balance-card .stat-info h3 {
+    color: white !important;
+}
+
+.total-balance-card .stat-icon {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+}
+
+/* Container Grafik */
+.charts-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.chart-card {
+    background: white;
+    padding: 15px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+@media (min-width: 768px) {
+    .charts-container {
+        grid-template-columns: 1fr 1fr;
+    }
+}
