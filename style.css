@@ -238,29 +238,21 @@ body {
 }
 
 /* Perbaikan tampilan checkbox */
-.checkbox-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 5px; /* Beri sedikit ruang */
-}
-
-input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
+/* Perbaikan tampilan checkbox agar berwarna hijau */
+.checkbox-container input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
     cursor: pointer;
+    /* Properti utama untuk mengubah warna ceklis */
+    accent-color: #00b894; 
+    /* Memberikan sedikit efek transparan agar tidak terlalu kaku saat disabled */
+    opacity: 1 !important;
 }
 
-/* Style untuk checkbox yang dicentang */
-input[type="checkbox"]:checked {
-    accent-color: #28a745; /* Warna hijau */
-    transform: scale(1.1); /* Sedikit lebih besar */
-}
-
-/* Style untuk checkbox yang disabled */
-input[type="checkbox"]:disabled {
-    opacity: 0.8;
-    cursor: not-allowed;
+/* Khusus untuk checkbox yang dalam keadaan disabled (karena di iuran kita set disabled) */
+.checkbox-container input[type="checkbox"]:disabled {
+    cursor: default;
+    filter: saturate(1.2); /* Memastikan warna hijau tetap terlihat cerah meskipun disabled */
 }
 
 /* --- AKHIR PERBAIKAN TABEL --- */
