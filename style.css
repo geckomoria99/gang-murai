@@ -657,3 +657,19 @@ input[type="checkbox"]:disabled {
 .status-ronda .ronda-bar-text {
     color: white !important;
 }
+
+/* Header untuk tombol ekspor di Ronda */
+.page-header-ronda {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* Memastikan teks tetap kontras di atas bar */
+.ronda-bar-text {
+    text-shadow: 0px 0px 2px rgba(255, 255, 255, 0.8);
+}
+.status-ronda .ronda-bar-text {
+    text-shadow: none;
+}
