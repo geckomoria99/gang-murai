@@ -21,22 +21,22 @@
     --gray-900: #212529;
     
     /* Border & Shadows */
-    --border-radius-sm: 8px;
-    --border-radius: 12px;
-    --border-radius-lg: 16px;
-    --border-radius-xl: 20px;
-    --box-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
-    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --box-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-    --box-shadow-hover: 0 12px 32px rgba(67, 97, 238, 0.15);
+    --border-radius-sm: 6px;
+    --border-radius: 10px;
+    --border-radius-lg: 14px;
+    --border-radius-xl: 18px;
+    --box-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.05);
+    --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --box-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --box-shadow-hover: 0 6px 20px rgba(67, 97, 238, 0.15);
     
-    /* Spacing */
-    --spacing-xs: 4px;
-    --spacing-sm: 8px;
-    --spacing-md: 12px;
-    --spacing-lg: 16px;
-    --spacing-xl: 24px;
-    --spacing-xxl: 32px;
+    /* Spacing - Mobile First */
+    --spacing-xs: 3px;
+    --spacing-sm: 6px;
+    --spacing-md: 10px;
+    --spacing-lg: 14px;
+    --spacing-xl: 18px;
+    --spacing-xxl: 22px;
     
     /* Transitions */
     --transition-fast: 0.2s ease;
@@ -60,10 +60,11 @@ body {
     font-family: 'Poppins', sans-serif;
     background: linear-gradient(135deg, #f5f7ff 0%, #f0f2ff 100%);
     color: var(--dark-color);
-    line-height: 1.6;
+    line-height: 1.5;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-size: 14px; /* Base font size untuk mobile */
 }
 
 .app-container {
@@ -86,15 +87,18 @@ body {
     transition: var(--transition);
 }
 
-/* Modern Header */
+/* Modern Header - Mobile Optimized */
 .app-header {
     background: var(--gradient-primary);
     color: white;
-    padding: var(--spacing-lg) var(--spacing-xl);
+    padding: var(--spacing-md) var(--spacing-lg);
     box-shadow: var(--box-shadow);
     position: relative;
     overflow: hidden;
     z-index: 10;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
 }
 
 .app-header::before {
@@ -119,36 +123,49 @@ body {
     align-items: center;
     position: relative;
     z-index: 1;
+    width: 100%;
+    flex-wrap: nowrap; /* Mencegah wrap di header */
 }
 
 .header-content h1 {
-    font-size: 1.5rem;
+    font-size: 1.2rem; /* Ukuran lebih kecil untuk mobile */
     font-weight: 700;
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    letter-spacing: -0.5px;
+    letter-spacing: -0.3px;
+    white-space: nowrap; /* Mencegah tulisan jadi 2 baris */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60%; /* Batasi lebar agar tidak overlap */
+    padding-right: var(--spacing-sm);
 }
 
 .header-content h1 i {
     background: rgba(255, 255, 255, 0.2);
-    padding: 8px;
+    padding: 6px;
     border-radius: 50%;
     backdrop-filter: blur(10px);
+    font-size: 0.9rem; /* Icon lebih kecil */
 }
 
 .refresh-info {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
-    font-size: 0.85rem;
+    gap: var(--spacing-sm);
+    font-size: 0.75rem; /* Font lebih kecil */
     background: rgba(255, 255, 255, 0.15);
-    padding: 6px 12px;
-    border-radius: 20px;
+    padding: 4px 8px;
+    border-radius: 16px;
     backdrop-filter: blur(10px);
+    white-space: nowrap; /* Mencegah wrap */
 }
 
-/* Modern Bottom Navigation */
+.refresh-info #lastUpdate {
+    display: none; /* Sembunyikan di mobile jika perlu */
+}
+
+/* Modern Bottom Navigation - Mobile Optimized */
 .bottom-nav {
     display: flex;
     justify-content: space-around;
@@ -159,11 +176,12 @@ body {
     left: 0;
     right: 0;
     z-index: 10;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
     border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
     border-top: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.98);
+    min-height: 60px;
 }
 
 .nav-item {
@@ -176,20 +194,21 @@ body {
     color: var(--gray-600);
     cursor: pointer;
     transition: all var(--transition);
-    padding: 8px 12px;
-    min-width: 70px;
+    padding: 6px 8px;
+    min-width: 55px; /* Lebih kecil untuk mobile */
     border-radius: var(--border-radius);
     position: relative;
+    font-size: 0.7rem; /* Font lebih kecil */
 }
 
 .nav-item i {
-    font-size: 1.3rem;
-    margin-bottom: 4px;
+    font-size: 1rem; /* Icon lebih kecil */
+    margin-bottom: 3px;
     transition: transform var(--transition);
 }
 
 .nav-item span {
-    font-size: 0.75rem;
+    font-size: 0.65rem; /* Font lebih kecil */
     font-weight: 500;
     transition: color var(--transition);
 }
@@ -197,21 +216,21 @@ body {
 .nav-item.active {
     color: var(--primary-color);
     background: rgba(67, 97, 238, 0.1);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
 }
 
 .nav-item.active i {
-    transform: scale(1.1);
+    transform: scale(1.05);
 }
 
 .nav-item::after {
     content: '';
     position: absolute;
-    bottom: -4px;
+    bottom: -2px;
     left: 50%;
     transform: translateX(-50%);
-    width: 4px;
-    height: 4px;
+    width: 3px;
+    height: 3px;
     background: var(--primary-color);
     border-radius: 50%;
     opacity: 0;
@@ -229,10 +248,11 @@ body {
 
 .content {
     flex: 1;
-    padding: var(--spacing-xl);
-    padding-bottom: 90px;
+    padding: var(--spacing-md);
+    padding-bottom: 70px; /* Sesuaikan dengan tinggi bottom-nav */
     overflow-y: auto;
     background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+    -webkit-overflow-scrolling: touch; /* Smooth scroll di iOS */
 }
 
 /* Page Transitions */
@@ -248,7 +268,7 @@ body {
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(8px);
     }
     to {
         opacity: 1;
@@ -256,56 +276,65 @@ body {
     }
 }
 
-/* Modern Page Header */
+/* Modern Page Header - Mobile Optimized */
 .page-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--spacing-xl);
-    padding-bottom: var(--spacing-md);
-    border-bottom: 2px solid rgba(67, 97, 238, 0.1);
+    flex-direction: column; /* Stack vertikal di mobile */
+    align-items: flex-start;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid rgba(67, 97, 238, 0.1);
+    gap: var(--spacing-sm);
 }
 
 .page-header h2 {
-    font-size: 1.75rem;
+    font-size: 1.3rem; /* Lebih kecil untuk mobile */
     font-weight: 700;
     color: var(--dark-color);
     position: relative;
     display: inline-block;
+    margin-bottom: 0;
 }
 
 .page-header h2::after {
     content: '';
     position: absolute;
-    bottom: -8px;
+    bottom: -6px;
     left: 0;
-    width: 40px;
-    height: 3px;
+    width: 30px;
+    height: 2px;
     background: var(--gradient-primary);
     border-radius: 2px;
 }
 
-.page-header-ronda {
+.page-header .btn-group {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--spacing-xl);
-    padding-bottom: var(--spacing-md);
-    border-bottom: 2px solid rgba(67, 97, 238, 0.1);
+    gap: var(--spacing-sm);
+    flex-wrap: wrap; /* Jika tombol banyak, bisa wrap */
 }
 
-/* Modern Cards */
+.page-header-ronda {
+    display: flex;
+    flex-direction: column; /* Stack vertikal di mobile */
+    align-items: flex-start;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid rgba(67, 97, 238, 0.1);
+    gap: var(--spacing-sm);
+}
+
+/* Modern Cards - Mobile Optimized */
 .card-container {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
 }
 
 .card {
     background: white;
-    border-radius: var(--border-radius-lg);
+    border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md);
     transition: all var(--transition);
     border: 1px solid rgba(255, 255, 255, 0.2);
     position: relative;
@@ -317,45 +346,48 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    width: 4px;
+    width: 3px;
     height: 100%;
     background: var(--gradient-primary);
 }
 
 .card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
     box-shadow: var(--box-shadow-hover);
     border-color: var(--primary-light);
 }
 
 .card-header {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column; /* Stack vertikal di mobile */
     align-items: flex-start;
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    gap: var(--spacing-xs);
 }
 
 .card-title {
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 0.95rem; /* Lebih kecil untuk mobile */
     color: var(--dark-color);
-    flex: 1;
-    margin-right: var(--spacing-md);
+    width: 100%;
+    margin-right: 0;
 }
 
 .card-date {
     color: var(--gray-600);
-    font-size: 0.85rem;
+    font-size: 0.75rem; /* Lebih kecil untuk mobile */
     background: var(--gray-100);
-    padding: 4px 8px;
+    padding: 3px 6px;
     border-radius: var(--border-radius-sm);
     font-weight: 500;
+    align-self: flex-start;
 }
 
 .card-content {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
     color: var(--gray-700);
-    line-height: 1.7;
+    line-height: 1.6;
+    font-size: 0.85rem; /* Lebih kecil untuk mobile */
 }
 
 .card-footer {
@@ -363,22 +395,23 @@ body {
     justify-content: space-between;
     align-items: center;
     color: var(--gray-600);
-    font-size: 0.85rem;
-    padding-top: var(--spacing-md);
+    font-size: 0.75rem; /* Lebih kecil untuk mobile */
+    padding-top: var(--spacing-sm);
     border-top: 1px solid var(--gray-200);
 }
 
-/* Modern Tables */
+/* Modern Tables - Mobile Optimized */
 .table-container {
     display: block;
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     background: white;
-    border-radius: var(--border-radius-lg);
+    border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     border: 1px solid var(--gray-200);
-    margin-top: var(--spacing-md);
+    margin-top: var(--spacing-sm);
+    font-size: 0.8rem; /* Font tabel lebih kecil */
 }
 
 .data-table {
@@ -386,7 +419,7 @@ body {
     min-width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    font-size: 0.9rem;
+    font-size: 0.8rem; /* Font tabel lebih kecil */
 }
 
 .data-table thead {
@@ -399,26 +432,33 @@ body {
     background: var(--gradient-primary);
     color: white;
     font-weight: 600;
-    padding: var(--spacing-lg) var(--spacing-md);
+    padding: 8px 6px; /* Padding lebih kecil */
     text-align: left;
-    border-bottom: 2px solid var(--primary-dark);
+    border-bottom: 1px solid var(--primary-dark);
     position: relative;
     overflow: hidden;
+    font-size: 0.75rem; /* Header tabel lebih kecil */
+    white-space: nowrap;
 }
 
 .data-table th:first-child {
-    border-top-left-radius: var(--border-radius-lg);
+    border-top-left-radius: var(--border-radius);
 }
 
 .data-table th:last-child {
-    border-top-right-radius: var(--border-radius-lg);
+    border-top-right-radius: var(--border-radius);
 }
 
 .data-table td {
-    padding: var(--spacing-md);
+    padding: 6px 4px; /* Padding lebih kecil */
     border-bottom: 1px solid var(--gray-200);
     color: var(--gray-700);
     transition: background-color var(--transition-fast);
+    font-size: 0.75rem; /* Data tabel lebih kecil */
+    max-width: 120px; /* Batasi lebar maksimal */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .data-table tbody tr {
@@ -427,7 +467,6 @@ body {
 
 .data-table tbody tr:hover {
     background-color: rgba(67, 97, 238, 0.05);
-    transform: scale(1.002);
 }
 
 .data-table tbody tr:last-child td {
@@ -435,27 +474,27 @@ body {
 }
 
 .data-table tbody tr:last-child td:first-child {
-    border-bottom-left-radius: var(--border-radius-lg);
+    border-bottom-left-radius: var(--border-radius);
 }
 
 .data-table tbody tr:last-child td:last-child {
-    border-bottom-right-radius: var(--border-radius-lg);
+    border-bottom-right-radius: var(--border-radius);
 }
 
-/* Modern Checkboxes */
+/* Modern Checkboxes - Mobile Optimized */
 .checkbox-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: var(--spacing-xs);
+    padding: 2px;
 }
 
 input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
+    width: 16px; /* Lebih kecil untuk mobile */
+    height: 16px; /* Lebih kecil untuk mobile */
     cursor: pointer;
-    border: 2px solid var(--gray-400);
-    border-radius: 4px;
+    border: 1.5px solid var(--gray-400);
+    border-radius: 3px;
     transition: all var(--transition-fast);
     position: relative;
 }
@@ -463,14 +502,14 @@ input[type="checkbox"] {
 input[type="checkbox"]:checked {
     background-color: var(--success-color);
     border-color: var(--success-color);
-    transform: scale(1.1);
+    transform: scale(1.05);
 }
 
 input[type="checkbox"]:checked::before {
     content: '✓';
     position: absolute;
     color: white;
-    font-size: 12px;
+    font-size: 10px; /* Lebih kecil untuk mobile */
     font-weight: bold;
     top: 50%;
     left: 50%;
@@ -478,13 +517,13 @@ input[type="checkbox"]:checked::before {
 }
 
 input[type="checkbox"]:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
-/* Modern Buttons */
+/* Modern Buttons - Mobile Optimized */
 .btn {
-    padding: 10px 16px;
+    padding: 6px 10px; /* Lebih kecil untuk mobile */
     border: none;
     border-radius: var(--border-radius);
     font-weight: 600;
@@ -493,9 +532,9 @@ input[type="checkbox"]:disabled {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    font-size: 0.9rem;
-    letter-spacing: 0.3px;
+    gap: 5px;
+    font-size: 0.8rem; /* Font lebih kecil */
+    letter-spacing: 0.2px;
     position: relative;
     overflow: hidden;
 }
@@ -510,12 +549,12 @@ input[type="checkbox"]:disabled {
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.2);
     transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
+    transition: width 0.4s, height 0.4s;
 }
 
 .btn:hover::before {
-    width: 300px;
-    height: 300px;
+    width: 200px;
+    height: 200px;
 }
 
 .btn-primary {
@@ -524,21 +563,21 @@ input[type="checkbox"]:disabled {
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(67, 97, 238, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.25);
 }
 
 .btn-outline {
     background: transparent;
-    border: 2px solid var(--primary-color);
+    border: 1.5px solid var(--primary-color);
     color: var(--primary-color);
 }
 
 .btn-outline:hover {
     background: var(--primary-color);
     color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(67, 97, 238, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.2);
 }
 
 .btn-danger {
@@ -547,36 +586,37 @@ input[type="checkbox"]:disabled {
 }
 
 .btn-danger:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(239, 71, 111, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 71, 111, 0.25);
 }
 
 .btn-small {
-    padding: 6px 12px;
-    font-size: 0.8rem;
+    padding: 4px 8px;
+    font-size: 0.7rem;
     border-radius: var(--border-radius-sm);
 }
 
 .btn-group {
     display: flex;
     gap: var(--spacing-sm);
+    flex-wrap: wrap;
 }
 
-/* Modern Stats Grid */
+/* Modern Stats Grid - Mobile Optimized */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: var(--spacing-lg);
-    margin-bottom: var(--spacing-xxl);
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Lebih kecil untuk mobile */
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
 }
 
 .stat-card {
     background: white;
-    padding: var(--spacing-xl);
-    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
     display: flex;
     align-items: center;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
     box-shadow: var(--box-shadow);
     border: 1px solid rgba(255, 255, 255, 0.2);
     transition: all var(--transition);
@@ -590,7 +630,7 @@ input[type="checkbox"]:disabled {
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
+    height: 3px;
     background: var(--gradient-primary);
 }
 
@@ -607,18 +647,18 @@ input[type="checkbox"]:disabled {
 }
 
 .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--box-shadow-lg);
+    transform: translateY(-2px);
+    box-shadow: var(--box-shadow);
 }
 
 .stat-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: var(--border-radius);
+    width: 40px; /* Lebih kecil untuk mobile */
+    height: 40px; /* Lebih kecil untuk mobile */
+    border-radius: var(--border-radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.1rem; /* Lebih kecil untuk mobile */
     flex-shrink: 0;
 }
 
@@ -643,26 +683,26 @@ input[type="checkbox"]:disabled {
 }
 
 .stat-info span {
-    font-size: 0.85rem;
+    font-size: 0.7rem; /* Lebih kecil untuk mobile */
     color: var(--gray-600);
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     font-weight: 500;
 }
 
 .stat-info h3 {
-    font-size: 1.3rem;
+    font-size: 0.95rem; /* Lebih kecil untuk mobile */
     font-weight: 700;
     margin: 0;
     color: var(--dark-color);
     line-height: 1.2;
 }
 
-/* Modern Accordion */
+/* Modern Accordion - Mobile Optimized */
 .month-accordion {
     background: white;
-    border-radius: var(--border-radius-lg);
-    margin-bottom: var(--spacing-md);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-sm);
     overflow: hidden;
     box-shadow: var(--box-shadow);
     border: 1px solid var(--gray-200);
@@ -670,11 +710,11 @@ input[type="checkbox"]:disabled {
 }
 
 .month-accordion:hover {
-    box-shadow: var(--box-shadow-lg);
+    box-shadow: var(--box-shadow);
 }
 
 .accordion-header {
-    padding: var(--spacing-lg) var(--spacing-xl);
+    padding: var(--spacing-md);
     background: white;
     cursor: pointer;
     display: flex;
@@ -683,6 +723,7 @@ input[type="checkbox"]:disabled {
     font-weight: 600;
     border-bottom: 1px solid transparent;
     transition: all var(--transition);
+    flex-wrap: wrap; /* Jika konten panjang, bisa wrap */
 }
 
 .month-accordion.active .accordion-header {
@@ -699,40 +740,44 @@ input[type="checkbox"]:disabled {
 
 .month-accordion.active .accordion-content {
     max-height: 2000px;
-    padding: var(--spacing-xl);
+    padding: var(--spacing-md);
 }
 
 .acc-left {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
     font-weight: 600;
     color: var(--dark-color);
-    font-size: 1.1rem;
+    font-size: 0.9rem; /* Lebih kecil untuk mobile */
+    flex: 1;
+    min-width: 0;
 }
 
 .acc-left i {
     color: var(--primary-color);
-    font-size: 1.2rem;
+    font-size: 0.9rem; /* Lebih kecil untuk mobile */
 }
 
 .acc-right {
     display: flex;
     align-items: center;
     text-align: right;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
+    flex-shrink: 0;
 }
 
 .label-saldo-header {
-    font-size: 0.8rem;
+    font-size: 0.7rem; /* Lebih kecil untuk mobile */
     color: var(--gray-600);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     font-weight: 600;
+    display: none; /* Sembunyikan di mobile untuk menghemat ruang */
 }
 
 .value-saldo-header {
-    font-size: 1.1rem;
+    font-size: 0.9rem; /* Lebih kecil untuk mobile */
     color: var(--primary-color);
     font-weight: 700;
 }
@@ -740,6 +785,7 @@ input[type="checkbox"]:disabled {
 .fa-chevron-down {
     transition: transform var(--transition);
     color: var(--gray-500);
+    font-size: 0.8rem; /* Lebih kecil untuk mobile */
 }
 
 .month-accordion.active .fa-chevron-down {
@@ -747,14 +793,14 @@ input[type="checkbox"]:disabled {
     color: var(--primary-color);
 }
 
-/* Modern Badges */
+/* Modern Badges - Mobile Optimized */
 .badge {
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.75rem;
+    padding: 2px 6px; /* Lebih kecil untuk mobile */
+    border-radius: 12px;
+    font-size: 0.65rem; /* Lebih kecil untuk mobile */
     font-weight: 600;
     display: inline-block;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
 }
 
 .badge-in {
@@ -769,30 +815,30 @@ input[type="checkbox"]:disabled {
     border: 1px solid rgba(239, 71, 111, 0.2);
 }
 
-/* Modern Ronda Visualization */
+/* Modern Ronda Visualization - Mobile Optimized */
 .ronda-visual-container {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
-    padding: var(--spacing-md);
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm);
 }
 
 .ronda-item {
     background: white;
-    padding: var(--spacing-lg);
-    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     border: 1px solid var(--gray-200);
     transition: all var(--transition);
 }
 
 .ronda-item:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--box-shadow-lg);
+    transform: translateY(-1px);
+    box-shadow: var(--box-shadow);
 }
 
 .ronda-item.status-ronda {
-    border-left: 4px solid var(--success-color);
+    border-left: 3px solid var(--success-color);
     background: linear-gradient(90deg, rgba(6, 214, 160, 0.05) 0%, white 100%);
 }
 
@@ -800,37 +846,45 @@ input[type="checkbox"]:disabled {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
 }
 
 .ronda-name {
     font-weight: 700;
     color: var(--dark-color);
-    font-size: 1rem;
+    font-size: 0.85rem; /* Lebih kecil untuk mobile */
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .ronda-name::before {
     content: '👤';
-    font-size: 0.9em;
+    font-size: 0.8em;
 }
 
 .ronda-days {
-    font-size: 0.85rem;
+    font-size: 0.75rem; /* Lebih kecil untuk mobile */
     color: var(--gray-600);
     background: var(--gray-100);
-    padding: 4px 10px;
-    border-radius: 20px;
+    padding: 2px 6px;
+    border-radius: 12px;
     font-weight: 600;
+    flex-shrink: 0;
 }
 
 .ronda-bar-bg {
     width: 100%;
-    height: 36px;
+    height: 28px; /* Lebih pendek untuk mobile */
     background: linear-gradient(90deg, var(--gray-100) 0%, var(--gray-200) 100%);
-    border-radius: 18px;
+    border-radius: 14px;
     position: relative;
     overflow: hidden;
     border: 1px solid var(--gray-300);
@@ -839,7 +893,7 @@ input[type="checkbox"]:disabled {
 .ronda-bar-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-light) 100%);
-    border-radius: 18px;
+    border-radius: 14px;
     transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
 }
@@ -873,13 +927,16 @@ input[type="checkbox"]:disabled {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
-    font-weight: 700;
+    font-size: 0.7rem; /* Lebih kecil untuk mobile */
+    font-weight: 600;
     color: white;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
     z-index: 2;
     pointer-events: none;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
+    padding: 0 8px;
+    text-align: center;
+    line-height: 1.2;
 }
 
 /* Modern Loading Indicator */
@@ -894,12 +951,12 @@ input[type="checkbox"]:disabled {
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(3px);
 }
 
 .spinner {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     border: 3px solid rgba(67, 97, 238, 0.1);
     border-radius: 50%;
     border-top-color: var(--primary-color);
@@ -945,38 +1002,38 @@ input[type="checkbox"]:disabled {
     color: var(--warning-color) !important;
 }
 
-.mt-10 { margin-top: 10px; }
-.mb-10 { margin-bottom: 10px; }
-.ml-10 { margin-left: 10px; }
-.mr-10 { margin-right: 10px; }
-
-.mt-20 { margin-top: 20px; }
-.mb-20 { margin-bottom: 20px; }
-.ml-20 { margin-left: 20px; }
-.mr-20 { margin-right: 20px; }
-
-.font-weight-bold {
-    font-weight: 700 !important;
-}
-
-.font-weight-medium {
-    font-weight: 600 !important;
-}
-
-/* Responsive Design */
+/* Responsive Design - Tablet */
 @media (min-width: 768px) {
-    .card-container {
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: var(--spacing-xl);
+    body {
+        font-size: 15px;
+    }
+    
+    .app-header {
+        padding: var(--spacing-lg) var(--spacing-xl);
+        min-height: 70px;
+    }
+    
+    .header-content h1 {
+        font-size: 1.4rem;
+        max-width: none;
+    }
+    
+    .refresh-info {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+    }
+    
+    .refresh-info #lastUpdate {
+        display: inline; /* Tampilkan di tablet */
     }
     
     .content {
-        padding: var(--spacing-xxl);
-        padding-bottom: 100px;
+        padding: var(--spacing-xl);
+        padding-bottom: 90px;
     }
     
     .bottom-nav {
-        max-width: 600px;
+        max-width: 500px;
         left: 50%;
         transform: translateX(-50%);
         border-radius: var(--border-radius-xl) var(--border-radius-xl) 0 0;
@@ -984,30 +1041,134 @@ input[type="checkbox"]:disabled {
     }
     
     .nav-item {
-        min-width: 80px;
+        min-width: 70px;
+        padding: 8px 12px;
+        font-size: 0.75rem;
+    }
+    
+    .nav-item i {
+        font-size: 1.2rem;
+    }
+    
+    .nav-item span {
+        font-size: 0.7rem;
+    }
+    
+    .page-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--spacing-xl);
+        padding-bottom: var(--spacing-md);
+    }
+    
+    .page-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .page-header h2::after {
+        width: 40px;
+        height: 3px;
+        bottom: -8px;
+    }
+    
+    .card-container {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: var(--spacing-lg);
+    }
+    
+    .card {
+        padding: var(--spacing-lg);
+    }
+    
+    .card-header {
+        flex-direction: row;
+        align-items: center;
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .card-title {
+        font-size: 1.05rem;
+        margin-right: var(--spacing-md);
+    }
+    
+    .card-date {
+        font-size: 0.85rem;
+        align-self: center;
+    }
+    
+    .card-content {
+        font-size: 0.9rem;
+    }
+    
+    .data-table {
+        font-size: 0.9rem;
+    }
+    
+    .data-table th {
+        font-size: 0.85rem;
+        padding: 10px 8px;
+    }
+    
+    .data-table td {
+        font-size: 0.85rem;
+        padding: 8px 6px;
     }
     
     .stats-grid {
-        gap: var(--spacing-xl);
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-xl);
     }
     
     .stat-card {
-        padding: var(--spacing-xxl);
+        padding: var(--spacing-lg);
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 1.3rem;
+    }
+    
+    .stat-info span {
+        font-size: 0.8rem;
+    }
+    
+    .stat-info h3 {
+        font-size: 1.1rem;
+    }
+    
+    .label-saldo-header {
+        display: inline; /* Tampilkan di tablet */
     }
 }
 
+/* Responsive Design - Desktop */
 @media (min-width: 992px) {
+    body {
+        font-size: 16px;
+    }
+    
     .app-container {
         max-width: 1200px;
         margin: 0 auto;
-        box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
         border-radius: 0;
         height: 100vh;
         overflow: hidden;
     }
     
+    .header-content h1 {
+        font-size: 1.5rem;
+    }
+    
     .bottom-nav {
-        max-width: 800px;
+        max-width: 600px;
+    }
+    
+    .nav-item {
+        min-width: 80px;
     }
 }
 
