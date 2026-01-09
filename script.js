@@ -289,24 +289,19 @@ function loadJadwalRonda() {
             const headers = data[0];
             const lastRondaIdx = headers.length - 1;
 
-              // Mapping & Sorting
+            // Mapping & Sorting
             let rondaList = [];
             for (let i = 1; i < data.length; i++) {
-                // Pastikan kolom terakhir diambil sebagai angka murni
-                const nilaiHari = parseInt(data[i][lastRondaIdx]) || 0;
                 rondaList.push({
                     nama: data[i][0],
-                    hariTerakhir: nilaiHari
+                    hariTerakhir: parseInt(data[i][lastRondaIdx]) || 0
                 });
             }
-            
-            // Logika Sorting yang Lebih Kuat:
+
+            // Urutan: Sedang Ronda (0) -> Terlama ke Terbaru
             rondaList.sort((a, b) => {
-                // 1. Cek jika salah satu sedang ronda (nilai 0)
-                if (a.hariTerakhir === 0 && b.hariTerakhir !== 0) return -1; 
-                if (a.hariTerakhir !== 0 && b.hariTerakhir === 0) return 1;
-                
-                // 2. Jika keduanya bukan 0, urutkan dari yang TERBESAR ke terkecil
+                if (a.hariTerakhir === 0) return -1;
+                if (b.hariTerakhir === 0) return 1;
                 return b.hariTerakhir - a.hariTerakhir;
             });
 
@@ -345,81 +340,32 @@ function loadJadwalRonda() {
 }
 
 async function exportRondaPDF() {
-    if (!rawRondaData || rawRondaData.length <= 1) {
-        alert("Data belum siap. Silakan refresh halaman.");
-        return;
-    }
-    
+    if (rawRondaData.length <= 1) return alert("Data ronda belum dimuat!");
     showLoading(true);
-    
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
-        const headers = rawRondaData[0]; // Baris pertama (Nama, Tanggal-tanggal, Terakhir Ronda)
-        const dataWarga = rawRondaData.slice(1); // Baris data warga
-        
         doc.setFontSize(16);
-        doc.setFont(undefined, 'bold');
-        doc.text("LAPORAN PERSONIL RONDA PER TANGGAL", 14, 20);
+        doc.text("HISTORI JADWAL RONDA WARGA", 14, 20);
         
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
-        doc.text(`Dicetak pada: ${moment().format('DD MMMM YYYY, HH:mm')}`, 14, 27);
-        doc.line(14, 30, 196, 30); // Garis pemisah
-
-        let currentY = 40;
-        const marginX = 14;
-
-        // Loop mulai dari kolom index 1 (tanggal pertama) 
-        // sampai kolom sebelum terakhir (karena kolom terakhir adalah 'Terakhir Ronda')
-        for (let col = 1; col < headers.length - 1; col++) {
-            const tanggalRonda = headers[col];
-            let personilMalamIni = [];
-
-            // Cek setiap warga di kolom tanggal ini
-            dataWarga.forEach(row => {
-                const namaWarga = row[0];
-                const statusRonda = (row[col] || "").toString().toUpperCase();
-                
-                if (statusRonda === 'TRUE') {
-                    personilMalamIni.push(namaWarga);
-                }
+        const rows = rawRondaData.slice(1).map(row => {
+            return row.map(cell => {
+                if (cell.toUpperCase() === 'TRUE') return 'V';
+                if (cell.toUpperCase() === 'FALSE') return '-';
+                return cell;
             });
+        });
 
-            // Hanya tampilkan tanggal yang ada personilnya
-            if (personilMalamIni.length > 0) {
-                // Cek apakah halaman masih cukup
-                if (currentY > 260) {
-                    doc.addPage();
-                    currentY = 20;
-                }
+        doc.autoTable({
+            startY: 30,
+            head: [rawRondaData[0]],
+            body: rows,
+            theme: 'grid',
+            headStyles: { fillColor: [67, 97, 238], fontSize: 8 },
+            styles: { fontSize: 7 }
+        });
 
-                // Tulis Header Tanggal
-                doc.setFont(undefined, 'bold');
-                doc.setFontSize(11);
-                doc.text(`Jadwal Ronda Tanggal: ${tanggalRonda}`, marginX, currentY);
-                currentY += 7;
-
-                // Tulis List Nama
-                doc.setFont(undefined, 'normal');
-                doc.setFontSize(10);
-                personilMalamIni.forEach((nama, index) => {
-                    doc.text(`${index + 1}. ${nama}`, marginX + 5, currentY);
-                    currentY += 6;
-                });
-
-                currentY += 5; // Spasi antar tanggal
-                doc.setDrawColor(230);
-                doc.line(marginX, currentY - 2, 100, currentY - 2); // Garis tipis pemisah
-                currentY += 5;
-            }
-        }
-
-        doc.save(`Personil_Ronda_EMurai_${moment().format('YYYYMMDD')}.pdf`);
-    } catch (e) {
-        console.error(e);
-        alert("Gagal membuat PDF: " + e.message);
-    } finally {
-        showLoading(false);
-    }
+        doc.save(`Histori_Ronda_EMurai.pdf`);
+    } catch (err) { alert("Error: " + err.message); }
+    finally { showLoading(false); }
 }
