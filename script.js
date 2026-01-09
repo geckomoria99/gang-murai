@@ -309,42 +309,111 @@ function exportToExcel() {
 async function exportToPDF() {
     if (rawKasData.length <= 1) return alert("Data kas belum terisi!");
     showLoading(true);
+    
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        
+        // 1. HEADER
         doc.setFontSize(18);
+        doc.setTextColor(67, 97, 238);
         doc.text("LAPORAN KAS E-MURAI", 14, 20);
         
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Dicetak pada: ${moment().format('DD/MM/YYYY HH:mm')}`, 14, 26);
+        doc.line(14, 28, pageWidth - 14, 28);
+
         let globalBalance = 0;
+        let totalMasuk = 0;
+        let totalKeluar = 0;
         const grouped = {};
+        
+        // Kelompokkan data per bulan
         for (let i = 1; i < rawKasData.length; i++) {
             const bulan = rawKasData[i][1];
             if (!grouped[bulan]) grouped[bulan] = [];
             grouped[bulan].push(rawKasData[i]);
         }
 
-        let currentY = 30;
+        let currentY = 35;
         for (const bulan of Object.keys(grouped)) {
             const rows = grouped[bulan].map(r => {
                 const vIn = parseInt(r[4]?.toString().replace(/[^0-9]/g, "")) || 0;
                 const vOut = parseInt(r[5]?.toString().replace(/[^0-9]/g, "")) || 0;
+                totalMasuk += vIn;
+                totalKeluar += vOut;
                 globalBalance += (vIn - vOut);
                 return [r[2], r[3], formatNumber(vIn), formatNumber(vOut), formatNumber(globalBalance)];
             });
 
+            doc.setFontSize(12);
+            doc.setTextColor(0);
             doc.text(`Bulan: ${bulan}`, 14, currentY);
+            
             doc.autoTable({
-                startY: currentY + 5,
+                startY: currentY + 3,
                 head: [['Tgl', 'Keterangan', 'Masuk', 'Keluar', 'Saldo']],
                 body: rows,
                 theme: 'grid',
                 headStyles: { fillColor: [67, 97, 238] },
-                didDrawPage: (d) => { currentY = d.cursor.y + 15; }
+                margin: { left: 14, right: 14 },
+                didDrawPage: (d) => { currentY = d.cursor.y + 12; }
             });
         }
-        doc.save(`Laporan_Kas_EMurai.pdf`);
-    } catch (err) { alert("Gagal PDF: " + err.message); }
-    finally { showLoading(false); }
+
+        // 2. RINGKASAN TOTAL (FOOTER TABEL)
+        if (currentY > 240) { doc.addPage(); currentY = 20; }
+        
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text("RINGKASAN KESELURUHAN", 14, currentY);
+        currentY += 5;
+        
+        doc.autoTable({
+            startY: currentY,
+            body: [
+                ['Total Pemasukan', `Rp ${formatNumber(totalMasuk)}`],
+                ['Total Pengeluaran', `Rp ${formatNumber(totalKeluar)}`],
+                ['Sisa Saldo Akhir', `Rp ${formatNumber(globalBalance)}`]
+            ],
+            theme: 'plain',
+            styles: { fontSize: 11, cellPadding: 2 },
+            columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } }
+        });
+        currentY = doc.lastAutoTable.finalY + 15;
+
+        // 3. MENAMBAHKAN GRAFIK KE PDF
+        // Kita ambil gambar dari elemen canvas HTML
+        const flowCanvas = document.getElementById('flowChart');
+        const balanceCanvas = document.getElementById('balanceChart');
+
+        if (flowCanvas && balanceCanvas) {
+            if (currentY > 200) { doc.addPage(); currentY = 20; }
+            
+            doc.text("VISUALISASI GRAFIK", 14, currentY);
+            
+            const imgFlow = flowCanvas.toDataURL("image/png", 1.0);
+            const imgBalance = balanceCanvas.toDataURL("image/png", 1.0);
+            
+            // Masukkan Grafik 1
+            doc.addImage(imgFlow, 'PNG', 14, currentY + 5, 180, 80);
+            
+            // Masukkan Grafik 2 (Cek halaman baru jika tidak cukup)
+            if (currentY + 100 > 250) { doc.addPage(); currentY = 20; } else { currentY += 95; }
+            
+            doc.addImage(imgBalance, 'PNG', 14, currentY, 180, 80);
+        }
+
+        doc.save(`Laporan_Lengkap_EMurai_${moment().format('YYYYMMDD')}.pdf`);
+        
+    } catch (err) { 
+        console.error(err);
+        alert("Gagal PDF: " + err.message); 
+    } finally { 
+        showLoading(false); 
+    }
 }
 // ---------------------------------------------------------
 // 4. JADWAL RONDA (SISTEM BAR VISUAL & SORTING)
