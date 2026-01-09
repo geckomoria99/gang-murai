@@ -530,3 +530,41 @@ input[type="checkbox"]:disabled {
 }
 .badge-in { background: #e6fff6; color: #00b894; }
 .badge-out { background: #fff0f5; color: #ff006e; }
+
+.accordion-header {
+    display: flex;
+    justify-content: space-between; /* Membuat konten terpisah ke kiri dan kanan */
+    align-items: center;
+}
+
+.acc-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.label-saldo-header {
+    font-size: 0.75rem;
+    color: var(--gray-color);
+    font-weight: 400;
+}
+
+.value-saldo-header {
+    font-size: 0.95rem;
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.ml-10 {
+    margin-left: 10px;
+}
+
+/* Responsif untuk HP agar tidak terlalu penuh */
+@media (max-width: 480px) {
+    .label-saldo-header {
+        display: none; /* Sembunyikan tulisan "Saldo Akhir:" di HP, sisakan angkanya saja */
+    }
+    .value-saldo-header {
+        font-size: 0.85rem;
+    }
+}
