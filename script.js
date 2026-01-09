@@ -435,8 +435,8 @@ async function exportToPDF() {
                     cellPadding: 3
                 },
                 columnStyles: {
-                    0: { cellWidth: 15, halign: 'center' },
-                    1: { cellWidth: 55 },
+                    0: { cellWidth: 20, halign: 'center' },
+                    1: { cellWidth: 50 },
                     2: { cellWidth: 25, halign: 'right' },
                     3: { cellWidth: 25, halign: 'right' },
                     4: { cellWidth: 30, halign: 'right' }
