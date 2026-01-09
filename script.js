@@ -347,23 +347,57 @@ async function exportToPDF() {
 function loadJadwalRonda() {
     fetchAndParseCSV(csvUrls.ronda)
         .then(data => {
-            if (data.length === 0) return;
+            if (data.length <= 1) return;
+
+            const rondaPage = document.getElementById('rondaPage');
+            // Bersihkan container dan siapkan div baru (bukan table)
+            const tableContainer = rondaPage.querySelector('.table-container');
+            tableContainer.innerHTML = '<div id="rondaVisualList" class="ronda-visual-container"></div>';
+            const listContainer = document.getElementById('rondaVisualList');
+
             const headers = data[0];
-            let html = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+            const lastRondaIdx = headers.length - 1; // Kolom "Terakhir Ronda"
+
+            // 1. Cari nilai maksimal untuk skala bar
+            let maxHari = 0;
             for (let i = 1; i < data.length; i++) {
-                if (!data[i][0]) continue;
-                html += '<tr>';
-                for (let j = 0; j < headers.length; j++) {
-                    const val = (data[i][j] || "").toString().trim().toUpperCase();
-                    if (val === 'TRUE' || val === 'FALSE') {
-                        html += `<td class="text-center"><input type="checkbox" ${val === 'TRUE' ? 'checked' : ''} disabled></td>`;
-                    } else {
-                        html += `<td>${data[i][j] || '-'}</td>`;
-                    }
-                }
-                html += '</tr>';
+                const nilai = parseInt(data[i][lastRondaIdx]) || 0;
+                if (nilai > maxHari) maxHari = nilai;
             }
-            rondaTable.innerHTML = html + '</tbody>';
+
+            // 2. Render tiap nama
+            for (let i = 1; i < data.length; i++) {
+                const nama = data[i][0];
+                const hariTerakhir = parseInt(data[i][lastRondaIdx]) || 0;
+                
+                let persentase, labelTeks, statusClass;
+
+                if (hariTerakhir === 0) {
+                    persentase = 100;
+                    labelTeks = "SEDANG RONDA";
+                    statusClass = "status-ronda";
+                } else {
+                    // Semakin kecil angka hari, semakin kosong bar-nya (0% adalah angka max)
+                    // Rumus: (hari / max) * 100
+                    persentase = (hariTerakhir / maxHari) * 100;
+                    labelTeks = `Sudah ${hariTerakhir} hari tidak ronda`;
+                    statusClass = "";
+                }
+
+                const itemHtml = `
+                    <div class="ronda-item ${statusClass}">
+                        <div class="ronda-info">
+                            <span>${nama}</span>
+                            <span>${hariTerakhir === 0 ? 'Aktif' : hariTerakhir + ' Hari'}</span>
+                        </div>
+                        <div class="ronda-bar-bg">
+                            <div class="ronda-bar-fill" style="width: ${persentase}%"></div>
+                            <div class="ronda-bar-text">${labelTeks}</div>
+                        </div>
+                    </div>
+                `;
+                listContainer.innerHTML += itemHtml;
+            }
             updateLastUpdateTime();
         })
         .finally(() => showLoading(false));
