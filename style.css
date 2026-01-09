@@ -531,26 +531,41 @@ input[type="checkbox"]:disabled {
 .badge-in { background: #e6fff6; color: #00b894; }
 .badge-out { background: #fff0f5; color: #ff006e; }
 
+/* Gaya Baru Header Accordion Kas */
 .accordion-header {
+    display: flex !important;
+    justify-content: space-between !important; /* Membagi kiri dan kanan */
+    align-items: center !important;
+    padding: 15px 20px;
+    background: #fff;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f1f1;
+    width: 100%;
+}
+
+.acc-left {
     display: flex;
-    justify-content: space-between; /* Membuat konten terpisah ke kiri dan kanan */
     align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: var(--dark-color);
 }
 
 .acc-right {
     display: flex;
     align-items: center;
-    gap: 8px;
+    text-align: right;
 }
 
 .label-saldo-header {
-    font-size: 0.75rem;
-    color: var(--gray-color);
-    font-weight: 400;
+    font-size: 0.7rem;
+    color: #888;
+    margin-right: 5px;
+    text-transform: uppercase;
 }
 
 .value-saldo-header {
-    font-size: 0.95rem;
+    font-size: 1rem;
     color: var(--primary-color);
     font-weight: 700;
 }
@@ -559,12 +574,10 @@ input[type="checkbox"]:disabled {
     margin-left: 10px;
 }
 
-/* Responsif untuk HP agar tidak terlalu penuh */
-@media (max-width: 480px) {
-    .label-saldo-header {
-        display: none; /* Sembunyikan tulisan "Saldo Akhir:" di HP, sisakan angkanya saja */
-    }
-    .value-saldo-header {
-        font-size: 0.85rem;
-    }
+.fa-chevron-down {
+    transition: transform 0.3s ease;
+}
+
+.month-accordion.active .fa-chevron-down {
+    transform: rotate(180deg);
 }
