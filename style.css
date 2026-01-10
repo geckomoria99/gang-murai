@@ -1451,3 +1451,83 @@ input[type="checkbox"]:disabled {
 .checkbox-container-modern input[type="checkbox"]:checked + .checkmark:after {
     display: block;
 }
+
+/* Styling untuk pengumuman */
+.pengumuman-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.pengumuman-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.pengumuman-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.pengumuman-header:hover {
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+.pengumuman-header-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.pengumuman-toggle {
+    color: var(--gray-500);
+    transition: transform 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.pengumuman-content {
+    padding: 15px;
+    border-top: 1px solid var(--gray-200);
+    background-color: rgba(67, 97, 238, 0.02);
+}
+
+.pengumuman-isi {
+    line-height: 1.6;
+    color: var(--gray-700);
+}
+
+.pengumuman-isi br {
+    margin-bottom: 8px;
+    display: block;
+    content: "";
+}
+
+/* Untuk mobile */
+@media (max-width: 768px) {
+    .pengumuman-header {
+        padding: 12px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .pengumuman-toggle {
+        align-self: flex-end;
+    }
+}
+.logo-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.app-subtitle {
+    font-size: 0.7rem;
+    opacity: 0.9;
+    margin-top: -3px;
+    font-weight: 400;
+}
