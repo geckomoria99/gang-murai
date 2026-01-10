@@ -85,30 +85,89 @@ function formatNumber(n) {
     return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); 
 }
 
+// Fungsi untuk memformat teks dengan line breaks
+function formatTextWithBreaks(text) {
+    if (!text) return '';
+    // Ganti karakter newline dengan <br>
+    return text.toString().replace(/\n/g, '<br>');
+}
+
+// Fungsi untuk memotong teks dengan titik-titik
+function truncateText(text, maxLength = 100) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+}
+
 // ---------------------------------------------------------
-// 1. PENGUMUMAN
+// 1. PENGUMUMAN - DENGAN FITUR EXPAND/COLLAPSE
 // ---------------------------------------------------------
 function loadPengumuman() {
     fetchAndParseCSV(csvUrls.pengumuman)
         .then(data => {
             pengumumanList.innerHTML = '';
             if (data.length <= 1) { 
-                pengumumanList.innerHTML = '<p>Tidak ada pengumuman.</p>'; 
+                pengumumanList.innerHTML = '<p class="text-center">Tidak ada pengumuman.</p>'; 
                 return; 
             }
+            
             for (let i = 1; i < data.length; i++) {
                 const [id, tgl, judul, isi, pengirim] = data[i];
+                const isiFormatted = formatTextWithBreaks(isi);
+                const isiTruncated = truncateText(isi, 150);
+                
                 const card = document.createElement('div');
-                card.className = 'card';
+                card.className = 'card pengumuman-card';
                 card.innerHTML = `
-                    <div class="card-header"><h3 class="card-title">${judul}</h3><span>${moment(tgl).format('DD/MM/YY')}</span></div>
-                    <div class="card-content"><p>${isi}</p></div>
-                    <div class="card-footer"><span>Oleh: ${pengirim}</span></div>`;
+                    <div class="card-header pengumuman-header" onclick="togglePengumuman(this)">
+                        <div class="pengumuman-header-content">
+                            <h3 class="card-title">${judul || 'Tanpa Judul'}</h3>
+                            <span class="card-date">${moment(tgl).format('DD/MM/YY')}</span>
+                        </div>
+                        <i class="fas fa-chevron-down pengumuman-toggle"></i>
+                    </div>
+                    <div class="card-content pengumuman-content" style="display: none;">
+                        <div class="pengumuman-isi">${isiFormatted}</div>
+                    </div>
+                    <div class="card-footer">
+                        <span>Oleh: ${pengirim || 'Admin'}</span>
+                    </div>`;
                 pengumumanList.appendChild(card);
             }
             updateLastUpdateTime();
         })
         .finally(() => showLoading(false));
+}
+
+// Fungsi untuk toggle pengumuman
+function togglePengumuman(headerElement) {
+    const card = headerElement.closest('.pengumuman-card');
+    const content = card.querySelector('.pengumuman-content');
+    const toggleIcon = headerElement.querySelector('.pengumuman-toggle');
+    
+    // Tutup semua pengumuman lainnya
+    document.querySelectorAll('.pengumuman-card').forEach(otherCard => {
+        if (otherCard !== card) {
+            const otherContent = otherCard.querySelector('.pengumuman-content');
+            const otherIcon = otherCard.querySelector('.pengumuman-toggle');
+            if (otherContent) otherContent.style.display = 'none';
+            if (otherIcon) {
+                otherIcon.classList.remove('fa-chevron-up');
+                otherIcon.classList.add('fa-chevron-down');
+            }
+        }
+    });
+    
+    // Toggle pengumuman ini
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        toggleIcon.classList.remove('fa-chevron-down');
+        toggleIcon.classList.add('fa-chevron-up');
+    } else {
+        content.style.display = 'none';
+        toggleIcon.classList.remove('fa-chevron-up');
+        toggleIcon.classList.add('fa-chevron-down');
+    }
 }
 
 // ---------------------------------------------------------
@@ -145,7 +204,7 @@ function loadIuranBulanan() {
 }
 
 // ---------------------------------------------------------
-// 3. UANG KAS (DASHBOARD & LAPORAN) - DENGAN TOTAL PER BULAN & URUTAN TERBARU DI ATAS
+// 3. UANG KAS (DASHBOARD & LAPORAN)
 // ---------------------------------------------------------
 function loadUangKas() {
     fetchAndParseCSV(csvUrls.kas)
@@ -164,10 +223,8 @@ function renderUangKas(data) {
         return;
     }
 
-    // Langkah 1: Proses semua data untuk mendapatkan total per bulan dan urutan yang benar
     const bulanData = {};
     
-    // Kumpulkan semua transaksi
     for (let i = 1; i < data.length; i++) {
         const row = data[i];
         if (!row[1]) continue;
@@ -176,7 +233,6 @@ function renderUangKas(data) {
         const keluar = parseInt(row[5]?.toString().replace(/[^0-9]/g, "")) || 0;
         const saldoTransaksi = masuk - keluar;
         
-        // Simpan transaksi
         const transaksi = {
             bulan: row[1],
             tgl: row[2],
@@ -186,7 +242,6 @@ function renderUangKas(data) {
             saldoTransaksi
         };
         
-        // Kelompokkan per bulan
         if (!bulanData[row[1]]) {
             bulanData[row[1]] = {
                 namaBulan: row[1],
@@ -203,7 +258,6 @@ function renderUangKas(data) {
         bulanData[row[1]].saldoBulan += saldoTransaksi;
     }
     
-    // Langkah 2: Urutkan bulan secara kronologis untuk perhitungan kumulatif
     const urutanBulan = {
         'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
         'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
@@ -211,11 +265,8 @@ function renderUangKas(data) {
     
     const sortedBulanKeys = Object.keys(bulanData).sort((a, b) => urutanBulan[a] - urutanBulan[b]);
     
-    // Langkah 3: Hitung saldo kumulatif per bulan
     let saldoKumulatifHinggaSekarang = 0;
     const bulanDenganSaldoKumulatif = [];
-    
-    // Simpan data untuk chart dan PDF
     kasDataForChart = [];
     
     for (const bulanKey of sortedBulanKeys) {
@@ -227,7 +278,6 @@ function renderUangKas(data) {
             saldoKumulatif: saldoKumulatifHinggaSekarang
         });
         
-        // Simpan untuk chart
         kasDataForChart.push({
             bulan: bulanKey,
             pemasukan: bulan.totalMasuk,
@@ -236,18 +286,14 @@ function renderUangKas(data) {
         });
     }
     
-    // Langkah 4: Hitung statistik untuk bulan terbaru (untuk dashboard)
     const bulanTerbaru = sortedBulanKeys[sortedBulanKeys.length - 1];
     const currentMonthIn = bulanTerbaru ? bulanData[bulanTerbaru].totalMasuk : 0;
     const currentMonthOut = bulanTerbaru ? bulanData[bulanTerbaru].totalKeluar : 0;
     
-    // Update statistik dashboard
     document.getElementById('statTotalSaldo').innerText = `Rp ${formatNumber(saldoKumulatifHinggaSekarang)}`;
     document.getElementById('statTotalMasuk').innerText = `Rp ${formatNumber(currentMonthIn)}`;
     document.getElementById('statTotalKeluar').innerText = `Rp ${formatNumber(currentMonthOut)}`;
     
-    // Langkah 5: Render accordion dengan urutan bulan TERBARU DI ATAS
-    // Buat peta saldo kumulatif per bulan
     const saldoSebelumBulan = {};
     let saldoSebelum = 0;
     
@@ -256,9 +302,7 @@ function renderUangKas(data) {
         saldoSebelum += bulanData[bulanKey].saldoBulan;
     }
     
-    // Render dari bulan terbaru ke terlama (reverse untuk terbaru di atas)
     bulanDenganSaldoKumulatif.reverse().forEach((bulanDataItem, idx) => {
-        // Mulai dari saldo kumulatif sebelum bulan ini
         let saldoBerjalan = saldoSebelumBulan[bulanDataItem.namaBulan];
         
         const rowsHtml = bulanDataItem.transaksi.map(item => {
@@ -274,7 +318,6 @@ function renderUangKas(data) {
                 </tr>`;
         }).join('');
         
-        // Tambahkan baris total per bulan
         const totalBulanHtml = `
             <tr class="total-row">
                 <td colspan="2" class="font-weight-bold text-right">TOTAL ${bulanDataItem.namaBulan.toUpperCase()}:</td>
@@ -287,7 +330,6 @@ function renderUangKas(data) {
         const accDiv = document.createElement('div');
         accDiv.className = `month-accordion ${idx === 0 ? 'active' : ''}`;
         
-        // PERUBAHAN: Header hanya menampilkan nama bulan saja, TANPA saldo
         accDiv.innerHTML = `
             <div class="accordion-header" onclick="toggleKasAccordion(this)">
                 <div class="acc-left">
@@ -300,14 +342,14 @@ function renderUangKas(data) {
             </div>
             <div class="accordion-content">
                 <div class="table-container">
-                    <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                    <table class="data-table">
                         <thead>
                             <tr>
-                                <th style="width: 15%;">Tgl</th>
-                                <th style="width: 35%;">Keterangan</th>
-                                <th style="width: 15%;">Masuk</th>
-                                <th style="width: 15%;">Keluar</th>
-                                <th style="width: 20%;">Saldo Kumulatif</th>
+                                <th>Tgl</th>
+                                <th>Keterangan</th>
+                                <th>Masuk</th>
+                                <th>Keluar</th>
+                                <th>Saldo Kumulatif</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -321,17 +363,14 @@ function renderUangKas(data) {
     });
 }
 
-// Fungsi untuk toggle accordion di menu kas
 function toggleKasAccordion(headerElement) {
     const accordion = headerElement.parentElement;
     const isActive = accordion.classList.contains('active');
     
-    // Tutup semua accordion terlebih dahulu
     document.querySelectorAll('.month-accordion').forEach(acc => {
         acc.classList.remove('active');
     });
     
-    // Jika accordion ini sebelumnya tidak aktif, buka
     if (!isActive) {
         accordion.classList.add('active');
     }
@@ -348,13 +387,13 @@ async function exportToPDF() {
         // Header
         doc.setFontSize(20);
         doc.setFont(undefined, 'bold');
+        doc.setTextColor(0, 0, 0);
         doc.text("LAPORAN KAS E-MURAI", 105, 20, { align: 'center' });
         
         doc.setFontSize(12);
         doc.setFont(undefined, 'normal');
-        doc.text(`Periode: ${moment().format('DD MMMM YYYY')}`, 105, 28, { align: 'center' });
+        doc.text(`System Management Gang Murai - Periode: ${moment().format('DD MMMM YYYY')}`, 105, 28, { align: 'center' });
         
-        // Proses data untuk perhitungan kumulatif
         const grouped = {};
         for (let i = 1; i < rawKasData.length; i++) {
             const bulan = rawKasData[i][1];
@@ -362,7 +401,6 @@ async function exportToPDF() {
             grouped[bulan].push(rawKasData[i]);
         }
         
-        // Urutkan bulan secara kronologis
         const urutanBulan = {
             'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
             'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
@@ -376,7 +414,6 @@ async function exportToPDF() {
         const margin = 20;
         const contentWidth = pageWidth - (2 * margin);
         
-        // Data untuk chart
         const chartData = {
             labels: [],
             pemasukan: [],
@@ -384,17 +421,14 @@ async function exportToPDF() {
             saldo: []
         };
         
-        // Tentukan lebar kolom yang sama rata
         const totalColumns = 5;
-        const equalColumnWidth = contentWidth / totalColumns - 5; // Kurangi sedikit untuk border
+        const equalColumnWidth = contentWidth / totalColumns - 5;
         
-        // Proses setiap bulan dalam urutan kronologis (lama ke baru)
         for (const bulan of sortedMonths) {
             const rows = grouped[bulan];
             let totalMasuk = 0;
             let totalKeluar = 0;
             
-            // Hitung total per bulan
             const rowData = rows.map(r => {
                 const vIn = parseInt(r[4]?.toString().replace(/[^0-9]/g, "")) || 0;
                 const vOut = parseInt(r[5]?.toString().replace(/[^0-9]/g, "")) || 0;
@@ -411,25 +445,22 @@ async function exportToPDF() {
                 };
             });
             
-            // Simpan data untuk chart
             chartData.labels.push(bulan);
             chartData.pemasukan.push(totalMasuk);
             chartData.pengeluaran.push(totalKeluar);
             chartData.saldo.push(globalBalance);
             
-            // Cek jika perlu halaman baru
             if (currentY > 220) {
                 doc.addPage();
                 currentY = 20;
             }
             
-            // Header Bulan
             doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
+            doc.setTextColor(0, 0, 0);
             doc.text(`Bulan: ${bulan}`, margin, currentY);
             currentY += 8;
             
-            // Siapkan data untuk tabel termasuk baris total
             const tableData = rowData.map(r => [
                 r.tgl,
                 r.ket,
@@ -438,7 +469,6 @@ async function exportToPDF() {
                 formatNumber(r.saldo)
             ]);
             
-            // Tambahkan baris total sebagai bagian dari tabel
             tableData.push([
                 '',
                 `TOTAL ${bulan.toUpperCase()}:`,
@@ -447,7 +477,6 @@ async function exportToPDF() {
                 formatNumber(globalBalance)
             ]);
             
-            // Buat tabel dengan autoTable - DENGAN WARNA HITAM SEMUA DAN KOLOM SAMA RATA
             doc.autoTable({
                 startY: currentY,
                 head: [['Tanggal', 'Keterangan', 'Masuk', 'Keluar', 'Saldo Kumulatif']],
@@ -456,7 +485,7 @@ async function exportToPDF() {
                 headStyles: { 
                     fillColor: [67, 97, 238], 
                     fontSize: 9,
-                    textColor: [255, 255, 255], // Putih untuk header
+                    textColor: [255, 255, 255], // PUTIH untuk header (TIDAK diubah)
                     halign: 'center',
                     fontStyle: 'bold'
                 },
@@ -464,7 +493,7 @@ async function exportToPDF() {
                     fontSize: 8,
                     cellPadding: 3,
                     overflow: 'linebreak',
-                    textColor: [0, 0, 0], // WARNA HITAM untuk semua teks di body
+                    textColor: [0, 0, 0], // Hitam untuk body
                     fontStyle: 'normal'
                 },
                 columnStyles: {
@@ -472,73 +501,61 @@ async function exportToPDF() {
                         cellWidth: equalColumnWidth, 
                         halign: 'center',
                         minCellWidth: equalColumnWidth - 2,
-                        textColor: [0, 0, 0] // Hitam
+                        textColor: [0, 0, 0]
                     },
                     1: { 
-                        cellWidth: equalColumnWidth + 10, // Keterangan sedikit lebih lebar
+                        cellWidth: equalColumnWidth + 10,
                         minCellWidth: equalColumnWidth,
-                        textColor: [0, 0, 0] // Hitam
+                        textColor: [0, 0, 0]
                     },
                     2: { 
                         cellWidth: equalColumnWidth, 
                         halign: 'right',
                         minCellWidth: equalColumnWidth - 2,
-                        textColor: [0, 0, 0] // Hitam
+                        textColor: [0, 0, 0]
                     },
                     3: { 
                         cellWidth: equalColumnWidth, 
                         halign: 'right',
                         minCellWidth: equalColumnWidth - 2,
-                        textColor: [0, 0, 0] // Hitam
+                        textColor: [0, 0, 0]
                     },
                     4: { 
                         cellWidth: equalColumnWidth, 
                         halign: 'right',
                         minCellWidth: equalColumnWidth - 2,
-                        textColor: [0, 0, 0] // Hitam
+                        textColor: [0, 0, 0]
                     }
                 },
                 margin: { left: margin, right: margin },
                 willDrawCell: function(data) {
-                    // Beri styling khusus untuk baris terakhir (total)
                     if (data.row.index === tableData.length - 1) {
-                        // Background hijau untuk seluruh baris
                         doc.setFillColor(230, 255, 247);
                         doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
                         
-                        // Border atas hijau
                         doc.setDrawColor(6, 214, 160);
                         doc.setLineWidth(0.5);
                         doc.line(data.cell.x, data.cell.y, data.cell.x + data.cell.width, data.cell.y);
                         
-                        // Font bold untuk total
                         doc.setFont(undefined, 'bold');
-                        
-                        // Text color hitam untuk total
                         doc.setTextColor(0, 0, 0);
                         
-                        // Background lebih gelap untuk kolom saldo
                         if (data.column.index === 4) {
                             doc.setFillColor(200, 250, 237);
                             doc.roundedRect(data.cell.x + 1, data.cell.y + 1, data.cell.width - 2, data.cell.height - 2, 2, 2, 'F');
                         }
                     } else {
-                        // Untuk baris biasa, pastikan warna hitam
                         doc.setTextColor(0, 0, 0);
                     }
                 },
                 didParseCell: function(data) {
-                    // Parse khusus untuk baris total
                     if (data.row.index === tableData.length - 1) {
-                        // Untuk baris total, semua teks hitam dan bold
-                        data.cell.styles.textColor = [0, 0, 0]; // Hitam
+                        data.cell.styles.textColor = [0, 0, 0];
                         data.cell.styles.fontStyle = 'bold';
                     } else {
-                        // Untuk baris biasa, semua teks hitam
-                        data.cell.styles.textColor = [0, 0, 0]; // Hitam
+                        data.cell.styles.textColor = [0, 0, 0];
                     }
                     
-                    // Untuk kolom Tgl, pastikan teks tidak terlalu panjang
                     if (data.column.index === 0 && data.cell.raw) {
                         if (data.cell.raw.length > 10) {
                             data.cell.text = data.cell.raw.substring(0, 10);
@@ -547,7 +564,6 @@ async function exportToPDF() {
                 },
                 didDrawPage: (d) => { 
                     currentY = d.cursor.y + 5;
-                    // Reset text color ke hitam setelah menggambar tabel
                     doc.setTextColor(0, 0, 0);
                 }
             });
@@ -555,18 +571,15 @@ async function exportToPDF() {
             currentY += 10;
         }
         
-        // Halaman baru untuk chart
         doc.addPage();
         currentY = 20;
         
-        // Chart 1: Pemasukan vs Pengeluaran
         doc.setFontSize(16);
         doc.setFont(undefined, 'bold');
-        doc.setTextColor(0, 0, 0); // Hitam
+        doc.setTextColor(0, 0, 0);
         doc.text("GRAFIK PEMASUKAN vs PENGELUARAN", 105, currentY, { align: 'center' });
         currentY += 10;
         
-        // Buat chart menggunakan canvas HTML
         const canvas1 = document.createElement('canvas');
         canvas1.width = 600;
         canvas1.height = 300;
@@ -610,7 +623,7 @@ async function exportToPDF() {
                             text: 'Trend Pemasukan dan Pengeluaran per Bulan',
                             font: {
                                 size: 14,
-                                color: '#000000' // Hitam
+                                color: '#000000'
                             }
                         },
                         legend: {
@@ -619,7 +632,7 @@ async function exportToPDF() {
                                 font: {
                                     size: 10
                                 },
-                                color: '#000000' // Hitam
+                                color: '#000000'
                             }
                         }
                     },
@@ -629,10 +642,10 @@ async function exportToPDF() {
                                 font: {
                                     size: 9
                                 },
-                                color: '#000000' // Hitam
+                                color: '#000000'
                             },
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.1)' // Grid abu-abu muda
+                                color: 'rgba(0, 0, 0, 0.1)'
                             }
                         },
                         y: {
@@ -641,7 +654,7 @@ async function exportToPDF() {
                                 font: {
                                     size: 9
                                 },
-                                color: '#000000', // Hitam
+                                color: '#000000',
                                 callback: function(value) {
                                     if (value >= 1000000) {
                                         return 'Rp ' + (value / 1000000).toFixed(1) + 'jt';
@@ -652,7 +665,7 @@ async function exportToPDF() {
                                 }
                             },
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.1)' // Grid abu-abu muda
+                                color: 'rgba(0, 0, 0, 0.1)'
                             }
                         }
                     }
@@ -666,10 +679,9 @@ async function exportToPDF() {
             currentY += 90;
         }
         
-        // Chart 2: Saldo Kumulatif
         doc.setFontSize(16);
         doc.setFont(undefined, 'bold');
-        doc.setTextColor(0, 0, 0); // Hitam
+        doc.setTextColor(0, 0, 0);
         doc.text("GRAFIK SALDO KUMULATIF", 105, currentY, { align: 'center' });
         currentY += 10;
         
@@ -705,7 +717,7 @@ async function exportToPDF() {
                             text: 'Perkembangan Saldo Kas dari Waktu ke Waktu',
                             font: {
                                 size: 14,
-                                color: '#000000' // Hitam
+                                color: '#000000'
                             }
                         },
                         legend: {
@@ -714,7 +726,7 @@ async function exportToPDF() {
                                 font: {
                                     size: 10
                                 },
-                                color: '#000000' // Hitam
+                                color: '#000000'
                             }
                         }
                     },
@@ -724,10 +736,10 @@ async function exportToPDF() {
                                 font: {
                                     size: 9
                                 },
-                                color: '#000000' // Hitam
+                                color: '#000000'
                             },
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.1)' // Grid abu-abu muda
+                                color: 'rgba(0, 0, 0, 0.1)'
                             }
                         },
                         y: {
@@ -736,7 +748,7 @@ async function exportToPDF() {
                                 font: {
                                     size: 9
                                 },
-                                color: '#000000', // Hitam
+                                color: '#000000',
                                 callback: function(value) {
                                     if (value >= 1000000) {
                                         return 'Rp ' + (value / 1000000).toFixed(1) + 'jt';
@@ -747,7 +759,7 @@ async function exportToPDF() {
                                 }
                             },
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.1)' // Grid abu-abu muda
+                                color: 'rgba(0, 0, 0, 0.1)'
                             }
                         }
                     }
@@ -761,15 +773,13 @@ async function exportToPDF() {
             currentY += 90;
         }
         
-        // Hapus canvas dari DOM
         if (canvas1.parentNode) document.body.removeChild(canvas1);
         if (canvas2.parentNode) document.body.removeChild(canvas2);
         
-        // Summary akhir
         currentY += 10;
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
-        doc.setTextColor(0, 0, 0); // Hitam
+        doc.setTextColor(0, 0, 0);
         doc.text("RINGKASAN AKHIR", margin, currentY);
         currentY += 8;
         
@@ -778,7 +788,7 @@ async function exportToPDF() {
         
         doc.setFont(undefined, 'normal');
         doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0); // Hitam
+        doc.setTextColor(0, 0, 0);
         
         const summaryWidth = contentWidth;
         const summaryHeight = 25;
@@ -800,15 +810,13 @@ async function exportToPDF() {
         doc.setFontSize(11);
         doc.text(`Saldo Akhir: Rp ${formatNumber(globalBalance)}`, col2, currentY + 12);
         
-        // Footer - hitam semua
         doc.setFontSize(9);
         doc.setFont(undefined, 'italic');
-        doc.setTextColor(0, 0, 0); // Hitam
+        doc.setTextColor(0, 0, 0);
         doc.text(`Laporan dicetak pada: ${moment().format('DD/MM/YYYY HH:mm')}`, 105, 285, { align: 'center' });
-        doc.text(`© E-MURAI ${new Date().getFullYear()}`, 105, 290, { align: 'center' });
+        doc.text(`© System Management Gang Murai ${new Date().getFullYear()}`, 105, 290, { align: 'center' });
         
-        // Simpan file
-        doc.save(`Laporan_Kas_Lengkap_EMurai_${moment().format('YYYYMMDD_HHmm')}.pdf`);
+        doc.save(`Laporan_Kas_EMurai_${moment().format('YYYYMMDD_HHmm')}.pdf`);
         
     } catch (err) { 
         console.error("Error generating PDF:", err);
@@ -845,7 +853,6 @@ function loadJadwalRonda() {
             const headers = data[0];
             const lastRondaIdx = headers.length - 1;
 
-            // Mapping & Sorting
             let rondaList = [];
             for (let i = 1; i < data.length; i++) {
                 rondaList.push({
@@ -854,7 +861,6 @@ function loadJadwalRonda() {
                 });
             }
 
-            // Urutan: Sedang Ronda (0) -> Terlama ke Terbaru
             rondaList.sort((a, b) => {
                 if (a.hariTerakhir === 0) return -1;
                 if (b.hariTerakhir === 0) return 1;
@@ -903,16 +909,14 @@ async function exportRondaPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
         
-        // Header PDF
         doc.setFontSize(20);
         doc.setFont(undefined, 'bold');
         doc.text("LAPORAN JADWAL RONDA", 105, 20, { align: 'center' });
         
         doc.setFontSize(12);
         doc.setFont(undefined, 'normal');
-        doc.text(`Perumahan E-Murai - Dicetak: ${moment().format('DD MMMM YYYY HH:mm')}`, 105, 28, { align: 'center' });
+        doc.text(`System Management Gang Murai - Dicetak: ${moment().format('DD MMMM YYYY HH:mm')}`, 105, 28, { align: 'center' });
         
-        // Data ronda (asumsi format CSV: header di baris 0, data mulai baris 1)
         const headers = rawRondaData[0];
         const dataRows = rawRondaData.slice(1);
         
@@ -985,7 +989,7 @@ async function exportRondaPDF() {
         doc.setFontSize(10);
         doc.setFont(undefined, 'italic');
         doc.text(`Total ${jadwalPerTanggal.length} hari jadwal ronda tercatat`, 105, 280, { align: 'center' });
-        doc.text(`© E-MURAI ${new Date().getFullYear()}`, 105, 285, { align: 'center' });
+        doc.text(`© System Management Gang Murai ${new Date().getFullYear()}`, 105, 285, { align: 'center' });
         
         doc.save(`Jadwal_Ronda_EMurai_${moment().format('YYYYMMDD')}.pdf`);
         
